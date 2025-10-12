@@ -11,7 +11,7 @@ import { ArrowLeft } from "lucide-react-native";
 import { createCategory, editCategory, getAsingleCategory } from "@/service/category";
 import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,7 +46,7 @@ const CategoryForm = () => {
   const red = useColor("red");
 
   const { toast } = useToast();
-
+  const queryClient = useQueryClient();
   // Fetch category data with useQuery
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["category", categoryId],
@@ -95,6 +95,9 @@ const CategoryForm = () => {
         variant: "error",
       });
       console.error("Error saving category:", error);
+    }
+    finally{
+      queryClient.invalidateQueries({queryKey: ["categories"]})
     }
   };
 

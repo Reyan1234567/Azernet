@@ -10,6 +10,7 @@ import { useColor } from "@/hooks/useColor";
 import { Building2, Users, Package, Phone, Mail, MapPin, ChevronRight } from "lucide-react-native";
 import React from "react";
 import { useRouter } from "expo-router";
+import TopBar from "@/components/topBar";
 
 const Business = () => {
   const router = useRouter();
@@ -107,7 +108,8 @@ const Business = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>  
+    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
+      <TopBar />
       <Tabs defaultValue="info">
         <TabsList style={{ 
           flexDirection: "row",

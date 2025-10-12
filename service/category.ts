@@ -7,7 +7,8 @@ export const getAllCategories = async (
   let query = supabase
     .from("categories")
     .select("*")
-    .eq("business_id", businessId);
+    .eq("business_id", businessId)
+    .is("is_deleted", false);
 
   if (search && search.trim() !== "") {
     query = query.ilike("category_name", `%${search}%`);

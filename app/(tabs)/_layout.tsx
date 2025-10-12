@@ -1,4 +1,3 @@
-import TopBar from "@/components/topBar";
 import { Icon } from "@/components/ui/icon";
 import { useColor } from "@/hooks/useColor";
 import { PlatformPressable } from "@react-navigation/elements";

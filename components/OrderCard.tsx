@@ -1,4 +1,4 @@
-import { ItemTransactionDisplay, CategoryTransactionDisplay } from "@/service/transaction";
+import { OrderTransactionDisplay } from "@/service/transaction";
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,32 +11,25 @@ import {
   User,
   Edit,
   Trash2,
-  TrendingUp,
-  TrendingDown,
+  ShoppingCart,
 } from "lucide-react-native";
 
-interface transactionCardEssentials {
-  transaction: ItemTransactionDisplay | CategoryTransactionDisplay;
+interface OrderCardProps {
+  order: OrderTransactionDisplay;
   handleEdit: () => void;
   handleDelete: () => void;
-  transactionType?: "item" | "category";
 }
-const TransactionCard = ({
-  transaction,
+
+const OrderCard = ({
+  order,
   handleDelete,
   handleEdit,
-  transactionType = "item",
-}: transactionCardEssentials) => {
-  const isPurchase = transaction.status === "Purchase";
+}: OrderCardProps) => {
   const successColor = useColor("green");
   const textColor = useColor("text");
   const destructiveColor = useColor("red");
   const mutedColor = useColor("textMuted");
-
-  // Get the name based on transaction type
-  const displayName = transactionType === "item" 
-    ? (transaction as ItemTransactionDisplay).item_name
-    : (transaction as CategoryTransactionDisplay).category_name;
+  const primaryColor = useColor("primary");
 
   return (
     <Card style={{ marginVertical: 8 }}>
@@ -51,49 +44,51 @@ const TransactionCard = ({
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Icon
-            name={isPurchase ? TrendingDown : TrendingUp}
+            name={ShoppingCart}
             size={16}
-            color={isPurchase ? destructiveColor : successColor}
+            color={primaryColor}
           />
           <Text
             variant="caption"
             style={{
-              color: isPurchase ? destructiveColor : successColor,
+              color: primaryColor,
               fontWeight: "600",
             }}
           >
-            {isPurchase ? "PURCHASE" : "SALE"}
+            ORDER
           </Text>
         </View>
         <Text variant="caption" style={{ color: mutedColor }}>
-          {new Date(transaction.created_at).toLocaleDateString()}
+          {new Date(order.created_at).toLocaleDateString()}
         </Text>
       </View>
 
       {/* Main Content */}
       <View style={{ marginBottom: 12 }}>
         <Text variant="title" style={{ marginBottom: 4, color: textColor }}>
-          {`${displayName} × ${transaction.amount}`}
+          {order.description || "Order"} × {order.amount}
         </Text>
         <Text variant="body" style={{ color: mutedColor }}>
-          {displayName}
+          {order.description || "No description"}
         </Text>
       </View>
 
       {/* Partner Info */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 12,
-        }}
-      >
-        <Icon name={User} size={16} color={mutedColor} />
-        <Text variant="caption" style={{ color: mutedColor }}>
-          {`${transaction.partner_first_name} ${transaction.partner_last_name}`}
-        </Text>
-      </View>
+      {order.partners && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
+          <Icon name={User} size={16} color={mutedColor} />
+          <Text variant="caption" style={{ color: mutedColor }}>
+            {`${order.partners.first_name} ${order.partners.last_name}`}
+          </Text>
+        </View>
+      )}
 
       <Separator style={{ marginVertical: 12 }} />
 
@@ -111,10 +106,10 @@ const TransactionCard = ({
             variant="caption"
             style={{ color: mutedColor, marginBottom: 2 }}
           >
-            {isPurchase ? "Purchase Price" : "Sale Price"}
+            Total Price
           </Text>
           <Text variant="subtitle" style={{ color: textColor }}>
-            ${transaction.line_total.toFixed(2)}
+            ${order.line_total.toFixed(2)}
           </Text>
         </View>
 
@@ -129,15 +124,15 @@ const TransactionCard = ({
             variant="body"
             style={{
               color:
-                transaction.unpaid_amount > 0
+                order.unpaid_amount > 0
                   ? destructiveColor
                   : successColor,
               fontWeight: "600",
             }}
           >
-            ${transaction.unpaid_amount.toFixed(2)}
+            ${order.unpaid_amount.toFixed(2)}
           </Text>
-          {transaction.unpaid_amount > 0 && (
+          {order.unpaid_amount > 0 && (
             <Text
               variant="caption"
               style={{ color: destructiveColor, fontSize: 10 }}
@@ -152,10 +147,10 @@ const TransactionCard = ({
             variant="caption"
             style={{ color: mutedColor, marginBottom: 2 }}
           >
-            Total Amount
+            Quantity
           </Text>
           <Text variant="body" style={{ color: mutedColor }}>
-            {transaction.amount} items
+            {order.amount} units
           </Text>
         </View>
       </View>
@@ -186,4 +181,4 @@ const TransactionCard = ({
   );
 };
 
-export default TransactionCard;
+export default OrderCard;

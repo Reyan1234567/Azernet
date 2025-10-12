@@ -1,4 +1,3 @@
-import TransactionCard from "@/components/TransactionCard";
 import React, { useState } from "react";
 import { FlatList, Modal } from "react-native";
 import { View } from "@/components/ui/view";
@@ -12,6 +11,7 @@ import renderPartnerCard from "@/components/PartnerCard";
 import TopBar from "@/components/topBar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ItemTransaction from "@/components/ItemTransaction";
+import CategoryTransaction from "@/components/CategoryTransaction";
 
 const Transactions = () => {
   const [filter, setFilter] = useState("All");
@@ -28,14 +28,6 @@ const Transactions = () => {
   const primaryColor = useColor("primary");
   const borderColor = useColor("border");
 
-  const filters = [
-    "All",
-    "Purchases",
-    "Sales",
-    "Unpaid Purchases",
-    "Unpaid Sales",
-  ];
-
   return (
     <View style={{ flex: 1, backgroundColor: bgColor}}>
       <TopBar />
@@ -48,15 +40,7 @@ const Transactions = () => {
           <ItemTransaction />
         </TabsContent>
         <TabsContent value="categories" style={{ flex: 1 }}>
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Text variant="caption">jaklflak</Text>
-            </View>
+          <CategoryTransaction />
         </TabsContent>
       </Tabs>
     </View>

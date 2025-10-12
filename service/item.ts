@@ -12,7 +12,7 @@ export const getAllItems = async (
     .eq("is_deleted", false);
 
   if (filter && filter !== "All" && filter.trim() !== "") {
-    query=query.eq("status", filter);
+    query=query.eq("measure", filter);
   }
 
   if (search && search.trim() !== "") {
@@ -57,9 +57,11 @@ export const deleteItem = async (id: number) => {
   const { data, error } = await supabase
     .from("items")
     .update({ is_deleted: true })
-    .eq("id", id);
+    .eq("id", id)
+    .select()
+    .single();
 
-  if (data) return "Item deleted succesfully";
+  if (data) return data;
 
   throw new Error(error?.message ?? "Something went wrong");
 };

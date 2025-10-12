@@ -37,12 +37,22 @@ const Categories = () => {
   };
 
   const handleDeleteCategory = async (categoryId: string) => {
-    await deleteCategory(Number(categoryId));
-    queryClient.invalidateQueries({ queryKey: ["categories"] });
-    toast({
-      title: "Deletion successful",
-      variant: "success",
-    });
+    try{
+      await deleteCategory(Number(categoryId));
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      toast({
+       title: "Deletion successful",
+       variant: "success",
+      });
+    }
+    catch(e){
+      toast({
+        title: "Deletion failed",
+        description: "Something went wrong",
+        variant: "error",
+      });
+    }
+    
   };
 
   const handleGoBack = () => {

@@ -15,7 +15,7 @@ import {
   getSinglePartner,
 } from "@/service/partners";
 import { useToast } from "@/components/ui/toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,13 +25,14 @@ import { Spinner } from "@/components/ui/spinner";
 const formSchema = z.object({
   firstname: z.string().min(1, "first name is required"),
   lastname: z.string().min(1, "last name is required"),
-  phone_number: z.string().min(1, "phone number is required"),
+  phone_number: z.string().min(1, "phone number is required").max(10, "Phone number must start with 09 or 07 and be 10 characters long").regex(/^(09|07)[0-9]{8}$/, "phone number must be a start with 09 or 07"),
   role: z.string().min(1, "role is required"),
 });
 
 type formShemaValues = z.infer<typeof formSchema>;
 
 const PartnerForm = () => {
+  const queryClient = useQueryClient();
   const {
     control,
     handleSubmit,
@@ -63,11 +64,11 @@ const PartnerForm = () => {
 
   const { toast } = useToast();
 
-  // Fetch partner data with useQuery
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["partner", partnerId],
-    queryFn: () => getSinglePartner(Number(partnerId)),
-    enabled: isEditMode && !!partnerId,
+    queryFn: async() => await getSinglePartner(Number(partnerId)),
+    enabled: isEditMode && !!partnerId && partnerId !== "new",
+    staleTime:0,
   });
 
   // Reset form when data is loaded
@@ -91,11 +92,15 @@ const PartnerForm = () => {
           phone_number: data.phone_number,
           id: Number(partnerId),
           role: data.role,
+          business_id:1
         });
         toast({
           title: "Success!",
           description: "Parnter info have been saved.",
           variant: "success",
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["partners"],
         });
       } else {
         await createPartner({
@@ -103,11 +108,15 @@ const PartnerForm = () => {
           last_name: data.lastname,
           phone_number: data.phone_number,
           role: data.role,
+          business_id:1
         });
         toast({
           title: "Success!",
           description: "Partner created successfully",
           variant: "success",
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["partners"],
         });
       }
       router.back();

@@ -14,7 +14,7 @@ import * as z from "zod";
 import { Picker } from "./ui/picker";
 import { createItem, editItem, getAsingleItem } from "@/service/item";
 import { useToast } from "./ui/toast";
-import { useQuery } from "@tanstack/react-query";
+import { QueryClient, useQuery } from "@tanstack/react-query";
 
 const formSchema = z.object({
   itemName: z.string().min(1, "Item name is required"),
@@ -44,6 +44,7 @@ const CreateItemForm = ({
   fromBottom,
   bgColor,
 }: itemCreation) => {
+
   const {
     control,
     handleSubmit,
@@ -59,7 +60,7 @@ const CreateItemForm = ({
       description: "",
     },
   });
-
+  const queryClient=new QueryClient();
   const MeasureOptions = [
     { value: "Item", label: "Item" },
     { value: "KG", label: "KG" },
@@ -76,6 +77,7 @@ const CreateItemForm = ({
     queryKey: ["item", itemId],
     queryFn: () => getAsingleItem(Number(itemId)),
     enabled: !!isEditMode && !!itemId && itemId !== "new",
+    staleTime:0
   });
 
   // Reset form when data is loaded
@@ -107,6 +109,7 @@ const CreateItemForm = ({
           description: "Item info has been updated.",
           variant: "success",
         });
+        queryClient.invalidateQueries({ queryKey: ["item"] });
       } else {
         await createItem({
           item_name: data.itemName,
@@ -120,8 +123,8 @@ const CreateItemForm = ({
           description: "Item created successfully",
           variant: "success",
         });
+        handleGoBack()
       }
-      handleGoBack()
     } catch (error) {
       toast({
         title: "Error!",
@@ -129,6 +132,9 @@ const CreateItemForm = ({
         variant: "error",
       });
       console.error("Error saving item:", error);
+    }
+    finally{
+      queryClient.invalidateQueries({ queryKey: ["item"] });
     }
   };
 
@@ -239,9 +245,8 @@ const CreateItemForm = ({
                     placeholder="1000 ETB"
                     value={field.value.toString()}
                     onChangeText={(text) => {
-                      const numericValue =
-                        text === "" ? undefined : Number(text);
-                      field.onChange(numericValue);
+                      text=text.replace(/[^0-9]/g, "");
+                      field.onChange(Number(text));
                     }}
                     keyboardType="numeric"
                     error={!!errors.purchasePrice}
@@ -266,9 +271,8 @@ const CreateItemForm = ({
                     placeholder="1500 ETB"
                     value={field.value.toString()}
                     onChangeText={(text) => {
-                      const numericValue =
-                        text === "" ? undefined : Number(text);
-                      field.onChange(numericValue);
+                      text=text.replace(/[^0-9]/g, "");
+                      field.onChange(Number(text));
                     }}
                     keyboardType="numeric"
                     error={!!errors.sellingPrice}

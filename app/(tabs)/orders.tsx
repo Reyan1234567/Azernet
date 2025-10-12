@@ -1,14 +1,16 @@
 import React from "react";
 import { View } from "@/components/ui/view";
-import { Text } from "@/components/ui/text";
 import TopBar from "@/components/topBar";
-import ItemTransaction from "@/components/ItemTransaction";
+import OrdersComponent from "@/components/OrdersComponent";
+import { useColor } from "@/hooks/useColor";
 
 const Orders = () => {
+  const bgColor = useColor("background");
+  
   return (
-    <View style={{flex:1}}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <TopBar />
-      <ItemTransaction />
+      <OrdersComponent />
     </View>
   );
 };

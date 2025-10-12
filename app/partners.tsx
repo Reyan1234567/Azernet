@@ -175,6 +175,7 @@ const Partners = () => {
                     title: `Are you sure you want to delete ${item.first_name}`,
                     description:
                       "Their record will still be kept but won't appear as customer in your lists",
+                    duration: 3000,
                     variant: "warning",
                     action: {
                       label: "Delete",

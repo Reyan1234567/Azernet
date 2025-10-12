@@ -7,10 +7,11 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import {
-  Dimensions,
+  LayoutChangeEvent,
   ScrollView,
   TextStyle,
   TouchableOpacity,
@@ -26,8 +27,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-const { width: screenWidth } = Dimensions.get('window');
-
 // Types
 interface TabsContextType {
   activeTab: string;
@@ -36,6 +35,9 @@ interface TabsContextType {
   tabValues: string[];
   registerTab: (value: string) => void;
   unregisterTab: (value: string) => void;
+  tabContents: { [key: string]: React.ReactNode };
+  registerTabContent: (value: string, content: React.ReactNode) => void;
+  unregisterTabContent: (value: string) => void;
   enableSwipe?: boolean;
   navigateToAdjacentTab?: (direction: 'next' | 'prev') => void;
 }
@@ -91,12 +93,11 @@ export function Tabs({
 }: TabsProps) {
   const [internalActiveTab, setInternalActiveTab] = useState(defaultValue);
   const [tabValues, setTabValues] = useState<string[]>([]);
+  const [tabContents, setTabContents] = useState<{ [key: string]: React.ReactNode }>({});
 
-  // Determine if we're in controlled or uncontrolled mode
   const isControlled = value !== undefined;
   const activeTab = isControlled ? value : internalActiveTab;
 
-  // Update internal state when value prop changes (controlled mode)
   useEffect(() => {
     if (isControlled && value !== internalActiveTab) {
       setInternalActiveTab(value);
@@ -105,11 +106,9 @@ export function Tabs({
 
   const setActiveTab = (newValue: string) => {
     if (!isControlled) {
-      // Uncontrolled mode: update internal state
       setInternalActiveTab(newValue);
     }
 
-    // Call onValueChange callback if provided (works in both controlled and uncontrolled modes)
     if (onValueChange) {
       onValueChange(newValue);
     }
@@ -128,6 +127,24 @@ export function Tabs({
     setTabValues((prev) => prev.filter((val) => val !== tabValue));
   }, []);
 
+  const registerTabContent = useCallback((value: string, content: React.ReactNode) => {
+    setTabContents(prev => {
+      // Only update if content actually changed
+      if (prev[value] === content) {
+        return prev;
+      }
+      return { ...prev, [value]: content };
+    });
+  }, []);
+
+  const unregisterTabContent = useCallback((value: string) => {
+    setTabContents(prev => {
+      const newContents = { ...prev };
+      delete newContents[value];
+      return newContents;
+    });
+  }, []);
+
   const navigateToAdjacentTab = useCallback(
     (direction: 'next' | 'prev') => {
       const currentIndex = tabValues.indexOf(activeTab);
@@ -136,10 +153,10 @@ export function Tabs({
       let nextIndex;
       if (direction === 'next') {
         nextIndex = currentIndex + 1;
-        if (nextIndex >= tabValues.length) nextIndex = 0; // Loop to first
+        if (nextIndex >= tabValues.length) nextIndex = 0;
       } else {
         nextIndex = currentIndex - 1;
-        if (nextIndex < 0) nextIndex = tabValues.length - 1; // Loop to last
+        if (nextIndex < 0) nextIndex = tabValues.length - 1;
       }
 
       const nextTab = tabValues[nextIndex];
@@ -159,6 +176,9 @@ export function Tabs({
         tabValues,
         registerTab,
         unregisterTab,
+        tabContents,
+        registerTabContent,
+        unregisterTabContent,
         enableSwipe,
         navigateToAdjacentTab,
       }}
@@ -166,6 +186,8 @@ export function Tabs({
       <View
         style={[
           {
+            flex: 1,
+            width: '100%',
             flexDirection: orientation === 'horizontal' ? 'column' : 'row',
           },
           style,
@@ -177,41 +199,39 @@ export function Tabs({
   );
 }
 
-// Add this after the existing interfaces
-interface CarouselTabContentProps {
-  children: React.ReactNode;
-  value: string;
-  style?: ViewStyle;
-}
-
-// Add a ref to track all content components
-let allTabContents: { [key: string]: React.ReactNode } = {};
-
-function CarouselTabContent({
+// Content Storage Component - FIXED: Memoized content
+const TabContentStorage = React.memo(({ 
+  value, 
   children,
-  value,
-  style,
-}: CarouselTabContentProps) {
-  const { activeTab, navigateToAdjacentTab, tabValues } = useTabsContext();
+  isActive 
+}: { 
+  value: string; 
+  children: React.ReactNode;
+  isActive: boolean;
+}) => {
+  const { registerTabContent, unregisterTabContent } = useTabsContext();
+  const contentRef = useRef<React.ReactNode>(null);
 
-  // Store this content
-  allTabContents[value] = children;
+  // Store the latest content
+  contentRef.current = children;
 
-  // Only render the carousel container for the active tab
-  if (activeTab !== value) {
-    return null;
-  }
+  useEffect(() => {
+    // Only register if active or if we have content to preserve
+    if (isActive || contentRef.current) {
+      registerTabContent(value, contentRef.current);
+    }
+    return () => {
+      // Only unregister if not active and we're sure we don't need it
+      if (!isActive) {
+        unregisterTabContent(value);
+      }
+    };
+  }, [value, isActive, registerTabContent, unregisterTabContent]);
 
-  return (
-    <CarouselContainer
-      activeTab={activeTab}
-      tabValues={tabValues}
-      onSwipe={navigateToAdjacentTab!}
-      style={style}
-    />
-  );
-}
+  return null; // This component doesn't render anything
+});
 
+// Carousel Container Component - FIXED: Stable content rendering
 function CarouselContainer({
   activeTab,
   tabValues,
@@ -223,46 +243,53 @@ function CarouselContainer({
   onSwipe: (direction: 'next' | 'prev') => void;
   style?: ViewStyle;
 }) {
+  const { tabContents } = useTabsContext();
   const translateX = useSharedValue(0);
   const isGestureActive = useSharedValue(false);
+  const [containerWidth, setContainerWidth] = useState(0);
   const currentIndex = tabValues.indexOf(activeTab);
 
-  // Reset translation when active tab changes (only if not during gesture)
+  const onLayout = (event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    setContainerWidth(width);
+  };
+
+  // Reset translation when active tab changes
   useEffect(() => {
-    if (!isGestureActive.value) {
+    if (!isGestureActive.value && containerWidth > 0) {
       translateX.value = withTiming(0, { duration: 300 });
     }
-  }, [activeTab]);
+  }, [activeTab, containerWidth]);
 
   const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
     .onBegin(() => {
       isGestureActive.value = true;
     })
     .onUpdate((event) => {
-      translateX.value = event.translationX;
+      if (containerWidth > 0) {
+        translateX.value = event.translationX;
+      }
     })
     .onEnd((event) => {
       isGestureActive.value = false;
 
-      const threshold = screenWidth * 0.15; // Lower threshold for easier swiping
-      const velocity = Math.abs(event.velocityX);
-      const translation = event.translationX;
+      if (containerWidth === 0) {
+        translateX.value = withTiming(0, { duration: 300 });
+        return;
+      }
 
-      // Determine if we should change tabs based on distance or velocity
-      const shouldChangeTab =
-        Math.abs(translation) > threshold || velocity > 500;
+      const threshold = containerWidth * 0.2;
+      const shouldChangeTab = Math.abs(event.translationX) > threshold;
 
       if (shouldChangeTab) {
-        if (translation > 0 && currentIndex > 0) {
-          // Swiped right - go to previous tab
+        if (event.translationX > 0 && currentIndex > 0) {
           runOnJS(onSwipe)('prev');
-        } else if (translation < 0 && currentIndex < tabValues.length - 1) {
-          // Swiped left - go to next tab
+        } else if (event.translationX < 0 && currentIndex < tabValues.length - 1) {
           runOnJS(onSwipe)('next');
         }
       }
-
-      // No snapping back - let the tab change handle the reset
+      translateX.value = withTiming(0, { duration: 300 });
     });
 
   const getPreviousTab = () => {
@@ -280,86 +307,117 @@ function CarouselContainer({
 
   const containerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
+    width: containerWidth,
   }));
 
   const previousStyle = useAnimatedStyle(() => {
+    if (containerWidth === 0) return { opacity: 0 };
+    
     const opacity = interpolate(
       translateX.value,
-      [0, screenWidth * 0.5],
-      [0, 1],
+      [0, containerWidth * 0.3],
+      [0, 0.8],
       Extrapolate.CLAMP
     );
 
     return {
-      transform: [{ translateX: translateX.value - screenWidth }],
+      transform: [{ translateX: translateX.value - containerWidth }],
       opacity: previousTab ? opacity : 0,
+      width: containerWidth,
     };
   });
 
   const nextStyle = useAnimatedStyle(() => {
+    if (containerWidth === 0) return { opacity: 0 };
+
     const opacity = interpolate(
       translateX.value,
-      [-screenWidth * 0.5, 0],
-      [1, 0],
+      [-containerWidth * 0.3, 0],
+      [0.8, 0],
       Extrapolate.CLAMP
     );
 
     return {
-      transform: [{ translateX: translateX.value + screenWidth }],
+      transform: [{ translateX: translateX.value + containerWidth }],
       opacity: nextTab ? opacity : 0,
+      width: containerWidth,
     };
   });
 
+  // FIXED: Render actual content directly for active tab, stored content for adjacent
+  const renderContent = (content: React.ReactNode, isActive: boolean) => (
+    <View style={{ flex: 1, width: '100%' }}>
+      {content}
+    </View>
+  );
+
   return (
     <GestureDetector gesture={panGesture}>
-      <View style={{ overflow: 'hidden' }}>
-        {/* Previous content */}
-        {previousTab && (
-          <Animated.View
-            style={[
-              {
-                position: 'absolute',
-                width: screenWidth,
-                paddingTop: 16,
-              },
-              style,
-              previousStyle,
-            ]}
-            pointerEvents='none'
-          >
-            {allTabContents[previousTab]}
-          </Animated.View>
-        )}
+      <View 
+        style={{ 
+          flex: 1, 
+          width: '100%',
+        }} 
+        onLayout={onLayout}
+      >
+        {containerWidth > 0 ? (
+          <>
+            {/* Previous content */}
+            {previousTab && (
+              <Animated.View
+                style={[
+                  {
+                    position: 'absolute',
+                    width: containerWidth,
+                    height: '100%',
+                    left: 0,
+                    top: 0,
+                  },
+                  previousStyle,
+                ]}
+                pointerEvents="none"
+              >
+                {renderContent(tabContents[previousTab], false)}
+              </Animated.View>
+            )}
 
-        {/* Current content */}
-        <Animated.View
-          style={[
-            {
-              paddingTop: 16,
-            },
-            style,
-            containerStyle,
-          ]}
-        >
-          {allTabContents[activeTab]}
-        </Animated.View>
+            {/* Current content */}
+            <Animated.View
+              style={[
+                {
+                  flex: 1,
+                  width: containerWidth,
+                },
+                containerStyle,
+              ]}
+            >
+              {renderContent(tabContents[activeTab], true)}
+            </Animated.View>
 
-        {/* Next content */}
-        {nextTab && (
-          <Animated.View
-            style={[
-              {
-                position: 'absolute',
-                width: screenWidth,
-                paddingTop: 16,
-              },
-              style,
-              nextStyle,
-            ]}
-            pointerEvents='none'
-          >
-            {allTabContents[nextTab]}
-          </Animated.View>
+            {/* Next content */}
+            {nextTab && (
+              <Animated.View
+                style={[
+                  {
+                    position: 'absolute',
+                    width: containerWidth,
+                    height: '100%',
+                    left: 0,
+                    top: 0,
+                  },
+                  nextStyle,
+                ]}
+                pointerEvents="none"
+              >
+                {renderContent(tabContents[nextTab], false)}
+              </Animated.View>
+            )}
+          </>
+        ) : (
+          // Fallback while measuring
+          <View style={{ flex: 1, width: '100%' }}>
+            {renderContent(tabContents[activeTab], true)}
+          </View>
         )}
       </View>
     </GestureDetector>
@@ -407,7 +465,6 @@ export function TabsTrigger({
     useTabsContext();
   const isActive = activeTab === value;
 
-  // Register/unregister tab for swipe navigation
   useEffect(() => {
     registerTab(value);
     return () => unregisterTab(value);
@@ -451,6 +508,8 @@ export function TabsTrigger({
       onPress={handlePress}
       disabled={disabled}
       activeOpacity={0.8}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isActive }}
     >
       {typeof children === 'string' ? (
         <Text style={triggerTextStyle}>{children}</Text>
@@ -469,14 +528,29 @@ export function TabsContent({ children, value, style }: TabsContentProps) {
     navigateToAdjacentTab,
     tabValues,
   } = useTabsContext();
+  
   const isActive = activeTab === value;
 
-  // For carousel mode, we need to render all content but only show active one
+  // For carousel mode with swipe enabled
   if (enableSwipe && orientation === 'horizontal' && navigateToAdjacentTab) {
     return (
-      <CarouselTabContent value={value} style={style}>
-        {children}
-      </CarouselTabContent>
+      <>
+        {/* FIXED: Separate content storage from rendering */}
+        <TabContentStorage value={value} isActive={isActive}>
+          {children}
+        </TabContentStorage>
+        
+        {/* Only render carousel for active tab */}
+        {isActive && (
+          <View style={[{ flex: 1, width: '100%' }, style]}>
+            <CarouselContainer
+              activeTab={activeTab}
+              tabValues={tabValues}
+              onSwipe={navigateToAdjacentTab}
+            />
+          </View>
+        )}
+      </>
     );
   }
 
@@ -486,14 +560,7 @@ export function TabsContent({ children, value, style }: TabsContentProps) {
   }
 
   return (
-    <View
-      style={[
-        {
-          paddingTop: 16,
-        },
-        style,
-      ]}
-    >
+    <View style={[{ flex: 1, width: '100%' }, style]}>
       {children}
     </View>
   );

@@ -17,19 +17,17 @@ import {
 } from "@/components/ui/combobox";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Separator } from "@/components/ui/separator";
-import { Picker } from "@/components/ui/picker";
 import * as z from "zod";
 import { useColor } from "@/hooks/useColor";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  createItemTransaction,
-  getListOfItems,
+  createOrder,
+  editOrder,
   getListOfPartners,
-  getSingleItemTransaction,
+  getSingleOrder,
 } from "@/service/transaction";
 import { ArrowLeft } from "lucide-react-native";
-import CreateItemForm from "@/components/CreateItemForm";
 import CreatePartnerForm from "@/components/CreatePartnerForm";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Spinner } from "@/components/ui/spinner";
@@ -37,11 +35,7 @@ import { useToast } from "@/components/ui/toast";
 import { useQuery } from "@tanstack/react-query";
 
 const formSchema = z.object({
-  item: z
-    .number({ required_error: "Item must be a number" })
-    .min(1, "Choose a valid item"),
   partner: z.number({ required_error: "Type must be a number" }).optional(),
-  type: z.string().min(1, "type is required"),
   amount: z
     .number({ required_error: "Type must be a number" })
     .min(1, "Fill in a valid amount"),
@@ -49,15 +43,16 @@ const formSchema = z.object({
     .number({ required_error: "Type must be a number" })
     .min(1, "Fill in a valid price"),
   unpaidAmount: z.number({ required_error: "Type must be a number" }),
+  description: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-const EditItemTransaction = () => {
+const EditOrder = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const transactionId = params.id as string;
-  const isEditMode = transactionId && transactionId !== "new";
+  const orderId = params.id as string;
+  const isEditMode = orderId && orderId !== "new";
   const { toast } = useToast();
 
   const {
@@ -68,12 +63,11 @@ const EditItemTransaction = () => {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      item: 0,
       partner: 0,
-      type: "",
       amount: 0,
       price: 0,
       unpaidAmount: 0,
+      description: "",
     },
   });
 
@@ -81,103 +75,99 @@ const EditItemTransaction = () => {
   const red = useColor("red");
   const textColor = useColor("text");
   const bgColor = useColor("background");
-  const [selectedItem, setSelectedItem] = useState<OptionType | null>(null);
   const [selectedPartner, setSelectedPartner] = useState<OptionType | null>(
     null
   );
-  const [isItemBottomSheetVisible, setItemBottomSheetVisible] = useState(false);
   const [isPartnerBottomSheetVisible, setPartnerBottomSheetVisible] =
     useState(false);
-  const [itemComboboxKey, setItemComboboxKey] = useState(0);
   const [partnerComboboxKey, setPartnerComboboxKey] = useState(0);
   const [amount, setAmount] = useState(0);
   const [price, setPrice] = useState(0);
 
-  // One unified useQuery to fetch all data
+  // Fetch data with useQuery
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["editTransactionData", transactionId],
+    queryKey: ["editOrderData", orderId],
     queryFn: async () => {
-      const [items, partners, transaction] = await Promise.all([
-        getListOfItems(1),
+      const [partners, order] = await Promise.all([
         getListOfPartners(1),
         isEditMode
-          ? getSingleItemTransaction(Number(transactionId))
+          ? getSingleOrder(Number(orderId))
           : Promise.resolve(null),
       ]);
-      return { items, partners, transaction };
+      return { partners, order };
     },
-    enabled: !!transactionId,
+    enabled: !!orderId,
   });
 
   // Reset form when data is loaded (only in edit mode)
   useEffect(() => {
-    if (isEditMode && data?.transaction) {
-      const { transaction } = data;
+    if (isEditMode && data?.order) {
+      const { order } = data;
 
       reset({
-        item: transaction.item_id,
-        partner: transaction.partner_id,
-        type: transaction.status,
-        amount: transaction.amount,
-        price: transaction.pricePerItem,
-        unpaidAmount: transaction.unpaidAmount,
+        partner: order.partner_id,
+        amount: order.amount,
+        price: order.pricePerItem,
+        unpaidAmount: order.unpaidAmount,
+        description: order.description,
       });
 
-      setSelectedItem({
-        value: transaction.item_id.toString(),
-        label: transaction.item_name,
-      });
+      if (order.partner_id) {
+        setSelectedPartner({
+          value: order.partner_id.toString(),
+          label: `${order.partnerFirstname} ${order.partnerLastname}`,
+        });
+      }
 
-      setSelectedPartner({
-        value: transaction.partner_id.toString(),
-        label: `${transaction.partnerFirstname} ${transaction.partnerFastname}`,
-      });
-
-      setAmount(transaction.amount);
-      setPrice(transaction.pricePerItem);
+      setAmount(order.amount);
+      setPrice(order.pricePerItem);
     }
   }, [isEditMode, data, reset]);
-
-  const handleOpenItemBottomSheet = () => {
-    setItemComboboxKey((prev) => prev + 1);
-    setItemBottomSheetVisible(true);
-  };
 
   const handleOpenPartnerBottomSheet = () => {
     setPartnerComboboxKey((prev) => prev + 1);
     setPartnerBottomSheetVisible(true);
   };
 
-  const transactionTypes: OptionType[] = [
-    { value: "Sale", label: "Sale" },
-    { value: "Purchase", label: "Purchase" },
-  ];
-  const secondaryBg=useColor("card")
+  const secondaryBg = useColor("card");
   const lineTotal = amount && price ? (amount * price).toFixed(2) : "0.00";
 
   const onSubmit = async (formData: FormData) => {
     try {
-      await createItemTransaction({
-        item: formData.item,
-        partner: formData.partner || 0,
-        type: formData.type,
-        amount: formData.amount,
-        price: formData.price,
-        unpaidAmount: formData.unpaidAmount,
-        lineTotal: Number(lineTotal),
-      });
+      if (isEditMode) {
+        await editOrder({
+          id: Number(orderId),
+          partner: formData.partner,
+          type: "order",
+          amount: formData.amount,
+          price: formData.price,
+          unpaidAmount: formData.unpaidAmount,
+          lineTotal: Number(lineTotal),
+          description: formData.description,
+        });
+      } else {
+        await createOrder({
+          partner: formData.partner,
+          type: "order",
+          amount: formData.amount,
+          price: formData.price,
+          unpaidAmount: formData.unpaidAmount,
+          lineTotal: Number(lineTotal),
+          description: formData.description,
+        });
+      }
       toast({
         title: isEditMode
-          ? "Transaction updated successfully"
-          : "Transaction created successfully",
+          ? "Order updated successfully"
+          : "Order created successfully",
         variant: "success",
       });
       router.back();
     } catch (e) {
       toast({
         title: isEditMode
-          ? "Failed to update transaction"
-          : "Failed to create transaction",
+          ? "Failed to update order"
+          : "Failed to create order",
         variant: "error",
       });
     }
@@ -200,7 +190,7 @@ const EditItemTransaction = () => {
           <Spinner
             size="default"
             variant="dots"
-            label="Loading transaction..."
+            label="Loading order..."
           />
         </View>
       </SafeAreaView>
@@ -219,7 +209,7 @@ const EditItemTransaction = () => {
           }}
         >
           <Text style={{ color: red, marginBottom: 16 }}>
-            {error?.message ?? "Failed to load transaction"}
+            {error?.message ?? "Failed to load order"}
           </Text>
           <Button onPress={handleGoBack}>Go Back</Button>
         </View>
@@ -250,7 +240,7 @@ const EditItemTransaction = () => {
               color: textColor,
             }}
           >
-            {isEditMode ? "Edit Transaction" : "Create Transaction"}
+            {isEditMode ? "Edit Order" : "Create Order"}
           </Text>
         </View>
 
@@ -262,42 +252,17 @@ const EditItemTransaction = () => {
           <View style={{ flexDirection: "column", gap: 15 }}>
             <Controller
               control={control}
-              name="item"
+              name="description"
               render={({ field }) => (
-                <Combobox
-                  key={itemComboboxKey}
-                  value={selectedItem}
-                  onValueChange={(option) => {
-                    field.onChange(Number(option?.value));
-                    setSelectedItem(option);
-                  }}
-                >
-                  <ComboboxTrigger error={!!errors.item}>
-                    <ComboboxValue placeholder="Select item..." />
-                  </ComboboxTrigger>
-                  <ComboboxContent>
-                    <ComboboxInput placeholder="Search items..." />
-                    <ComboboxList>
-                      <ComboboxEmpty>
-                        <Button onPress={handleOpenItemBottomSheet}>
-                          Click to Create new Item
-                        </Button>
-                      </ComboboxEmpty>
-                      {data?.items.map((item) => (
-                        <ComboboxItem key={item.id} value={item.id.toString()}>
-                          {item.item_name}
-                        </ComboboxItem>
-                      ))}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
+                <Input
+                  label="Description (Optional)"
+                  placeholder="Order description"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  type="textarea"
+                />
               )}
             />
-            {errors.item && (
-              <Text style={{ color: red, fontSize: 12 }}>
-                {errors.item.message}
-              </Text>
-            )}
 
             <Controller
               control={control}
@@ -312,7 +277,7 @@ const EditItemTransaction = () => {
                   }}
                 >
                   <ComboboxTrigger>
-                    <ComboboxValue placeholder="Select partner..." />
+                    <ComboboxValue placeholder="Select partner (Optional)..." />
                   </ComboboxTrigger>
                   <ComboboxContent>
                     <ComboboxInput placeholder="Search partners..." />
@@ -336,24 +301,7 @@ const EditItemTransaction = () => {
               )}
             />
             <Separator style={{ marginVertical: 15 }} />
-            <Controller
-              control={control}
-              name="type"
-              render={({ field }) => (
-                <Picker
-                  options={transactionTypes}
-                  value={field.value}
-                  label="Type"
-                  onValueChange={field.onChange}
-                  placeholder="Select Sale or Purchase"
-                />
-              )}
-            />
-            {errors.type && (
-              <Text variant="caption" style={{ color: red }}>
-                Type is required
-              </Text>
-            )}
+            
             <Controller
               control={control}
               name="amount"
@@ -409,23 +357,6 @@ const EditItemTransaction = () => {
                 />
               )}
             />
-            <BottomSheet
-              isVisible={isItemBottomSheetVisible}
-              onClose={() => setItemBottomSheetVisible(false)}
-            //   title="Create Item"
-              snapPoints={[0.8, 0.8]}
-              enableBackdropDismiss={false}
-            >
-              <View style={{ gap: 20 }}>
-                <CreateItemForm
-                  isEditMode={false}
-                  handleGoBack={() => setItemBottomSheetVisible(false)}
-                  itemId={"new"}
-                  fromBottom={true}
-                  bgColor={secondaryBg}
-                />
-              </View>
-            </BottomSheet>
 
             <BottomSheet
               isVisible={isPartnerBottomSheetVisible}
@@ -470,8 +401,8 @@ const EditItemTransaction = () => {
                   ? "Updating..."
                   : "Creating..."
                 : isEditMode
-                ? "Update Transaction"
-                : "Create Transaction"}
+                ? "Update Order"
+                : "Create Order"}
             </Button>
           </View>
         </ScrollView>
@@ -480,4 +411,4 @@ const EditItemTransaction = () => {
   );
 };
 
-export default EditItemTransaction;
+export default EditOrder;

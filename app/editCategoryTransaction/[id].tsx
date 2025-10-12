@@ -23,23 +23,23 @@ import { useColor } from "@/hooks/useColor";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  createItemTransaction,
-  getListOfItems,
+  createCategoryTransaction,
+  getListOfCategories,
   getListOfPartners,
-  getSingleItemTransaction,
+  getSingleCategoryTransaction,
 } from "@/service/transaction";
 import { ArrowLeft } from "lucide-react-native";
-import CreateItemForm from "@/components/CreateItemForm";
 import CreatePartnerForm from "@/components/CreatePartnerForm";
+import CreateCategoryForm from "@/components/CreateCategoryForm";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const formSchema = z.object({
-  item: z
-    .number({ required_error: "Item must be a number" })
-    .min(1, "Choose a valid item"),
+  category: z
+    .number({ required_error: "Category must be a number" })
+    .min(1, "Choose a valid category"),
   partner: z.number({ required_error: "Type must be a number" }).optional(),
   type: z.string().min(1, "type is required"),
   amount: z
@@ -53,7 +53,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const EditItemTransaction = () => {
+const EditCategoryTransaction = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const transactionId = params.id as string;
@@ -68,7 +68,7 @@ const EditItemTransaction = () => {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      item: 0,
+      category: 0,
       partner: 0,
       type: "",
       amount: 0,
@@ -81,30 +81,31 @@ const EditItemTransaction = () => {
   const red = useColor("red");
   const textColor = useColor("text");
   const bgColor = useColor("background");
-  const [selectedItem, setSelectedItem] = useState<OptionType | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<OptionType | null>(null);
   const [selectedPartner, setSelectedPartner] = useState<OptionType | null>(
     null
   );
-  const [isItemBottomSheetVisible, setItemBottomSheetVisible] = useState(false);
+  const [isCategoryBottomSheetVisible, setCategoryBottomSheetVisible] = useState(false);
   const [isPartnerBottomSheetVisible, setPartnerBottomSheetVisible] =
     useState(false);
-  const [itemComboboxKey, setItemComboboxKey] = useState(0);
+  const [categoryComboboxKey, setCategoryComboboxKey] = useState(0);
   const [partnerComboboxKey, setPartnerComboboxKey] = useState(0);
   const [amount, setAmount] = useState(0);
   const [price, setPrice] = useState(0);
-
+  
+  const queryClient = useQueryClient();
   // One unified useQuery to fetch all data
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["editTransactionData", transactionId],
+    queryKey: ["editCategoryTransactionData", transactionId],
     queryFn: async () => {
-      const [items, partners, transaction] = await Promise.all([
-        getListOfItems(1),
+      const [categories, partners, transaction] = await Promise.all([
+        getListOfCategories(1),
         getListOfPartners(1),
         isEditMode
-          ? getSingleItemTransaction(Number(transactionId))
+          ? getSingleCategoryTransaction(Number(transactionId))
           : Promise.resolve(null),
       ]);
-      return { items, partners, transaction };
+      return { categories, partners, transaction };
     },
     enabled: !!transactionId,
   });
@@ -115,7 +116,7 @@ const EditItemTransaction = () => {
       const { transaction } = data;
 
       reset({
-        item: transaction.item_id,
+        category: transaction.category_id,
         partner: transaction.partner_id,
         type: transaction.status,
         amount: transaction.amount,
@@ -123,9 +124,9 @@ const EditItemTransaction = () => {
         unpaidAmount: transaction.unpaidAmount,
       });
 
-      setSelectedItem({
-        value: transaction.item_id.toString(),
-        label: transaction.item_name,
+      setSelectedCategory({
+        value: transaction.category_id.toString(),
+        label: transaction.category_name,
       });
 
       setSelectedPartner({
@@ -138,9 +139,9 @@ const EditItemTransaction = () => {
     }
   }, [isEditMode, data, reset]);
 
-  const handleOpenItemBottomSheet = () => {
-    setItemComboboxKey((prev) => prev + 1);
-    setItemBottomSheetVisible(true);
+  const handleOpenCategoryBottomSheet = () => {
+    setCategoryComboboxKey((prev) => prev + 1);
+    setCategoryBottomSheetVisible(true);
   };
 
   const handleOpenPartnerBottomSheet = () => {
@@ -152,13 +153,13 @@ const EditItemTransaction = () => {
     { value: "Sale", label: "Sale" },
     { value: "Purchase", label: "Purchase" },
   ];
-  const secondaryBg=useColor("card")
+  const secondaryBg = useColor("card");
   const lineTotal = amount && price ? (amount * price).toFixed(2) : "0.00";
 
   const onSubmit = async (formData: FormData) => {
     try {
-      await createItemTransaction({
-        item: formData.item,
+      await createCategoryTransaction({
+        category: formData.category,
         partner: formData.partner || 0,
         type: formData.type,
         amount: formData.amount,
@@ -180,6 +181,9 @@ const EditItemTransaction = () => {
           : "Failed to create transaction",
         variant: "error",
       });
+    }
+    finally{
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
     }
   };
 
@@ -250,7 +254,7 @@ const EditItemTransaction = () => {
               color: textColor,
             }}
           >
-            {isEditMode ? "Edit Transaction" : "Create Transaction"}
+            {isEditMode ? "Edit Category Transaction" : "Create Category Transaction"}
           </Text>
         </View>
 
@@ -262,30 +266,30 @@ const EditItemTransaction = () => {
           <View style={{ flexDirection: "column", gap: 15 }}>
             <Controller
               control={control}
-              name="item"
+              name="category"
               render={({ field }) => (
                 <Combobox
-                  key={itemComboboxKey}
-                  value={selectedItem}
+                  key={categoryComboboxKey}
+                  value={selectedCategory}
                   onValueChange={(option) => {
                     field.onChange(Number(option?.value));
-                    setSelectedItem(option);
+                    setSelectedCategory(option);
                   }}
                 >
-                  <ComboboxTrigger error={!!errors.item}>
-                    <ComboboxValue placeholder="Select item..." />
+                  <ComboboxTrigger error={!!errors.category}>
+                    <ComboboxValue placeholder="Select category..." />
                   </ComboboxTrigger>
                   <ComboboxContent>
-                    <ComboboxInput placeholder="Search items..." />
+                    <ComboboxInput placeholder="Search categories..." />
                     <ComboboxList>
                       <ComboboxEmpty>
-                        <Button onPress={handleOpenItemBottomSheet}>
-                          Click to Create new Item
+                        <Button onPress={handleOpenCategoryBottomSheet}>
+                          Click to Create new Category
                         </Button>
                       </ComboboxEmpty>
-                      {data?.items.map((item) => (
-                        <ComboboxItem key={item.id} value={item.id.toString()}>
-                          {item.item_name}
+                      {data?.categories.map((category) => (
+                        <ComboboxItem key={category.id} value={category.id.toString()}>
+                          {category.category_name}
                         </ComboboxItem>
                       ))}
                     </ComboboxList>
@@ -293,9 +297,9 @@ const EditItemTransaction = () => {
                 </Combobox>
               )}
             />
-            {errors.item && (
+            {errors.category && (
               <Text style={{ color: red, fontSize: 12 }}>
-                {errors.item.message}
+                {errors.category.message}
               </Text>
             )}
 
@@ -409,18 +413,17 @@ const EditItemTransaction = () => {
                 />
               )}
             />
+
             <BottomSheet
-              isVisible={isItemBottomSheetVisible}
-              onClose={() => setItemBottomSheetVisible(false)}
-            //   title="Create Item"
+              isVisible={isCategoryBottomSheetVisible}
+              onClose={() => setCategoryBottomSheetVisible(false)}
+              title=""
               snapPoints={[0.8, 0.8]}
               enableBackdropDismiss={false}
             >
               <View style={{ gap: 20 }}>
-                <CreateItemForm
-                  isEditMode={false}
-                  handleGoBack={() => setItemBottomSheetVisible(false)}
-                  itemId={"new"}
+                <CreateCategoryForm
+                  handleGoBack={() => setCategoryBottomSheetVisible(false)}
                   fromBottom={true}
                   bgColor={secondaryBg}
                 />
@@ -480,4 +483,4 @@ const EditItemTransaction = () => {
   );
 };
 
-export default EditItemTransaction;
+export default EditCategoryTransaction;

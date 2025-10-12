@@ -29,7 +29,7 @@ const Items = () => {
   const mutedColor = useColor("textMuted");
   const primaryColor = useColor("primary");
 
-  const filters = ["All", "Category", "Item"];
+  const filters = ["All", "KG", "Item", "Lt"];
 
   const { data, isSuccess, isLoading, isError, error } = useQuery({
     queryKey: ["items", filter, debouncedSearchTerm],
@@ -181,8 +181,16 @@ const Items = () => {
                   variant: "warning",
                   action: {
                     label: "Delete",
-                    onPress: () => {
-                      handleDeleteItem(item.id);
+                    onPress: async () => {
+                      try {
+                        await handleDeleteItem(item.id);
+                      } catch (error) {
+                        toast({
+                          title: "Error deleting item",
+                          description: "Something went wrong",
+                          variant: "error",
+                        })
+                      }
                     },
                   },
                 });
