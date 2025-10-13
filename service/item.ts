@@ -12,11 +12,11 @@ export const getAllItems = async (
     .eq("is_deleted", false);
 
   if (filter && filter !== "All" && filter.trim() !== "") {
-    query=query.eq("measure", filter);
+    query = query.eq("measure", filter);
   }
 
   if (search && search.trim() !== "") {
-    query=query.or(`item_name.ilike.%${search}%, measure.ilike.%${search}%`);
+    query = query.or(`item_name.ilike.%${search}%, measure.ilike.%${search}%`);
   }
 
   const { data, error } = await query;
@@ -73,4 +73,19 @@ export type createItemType = {
   purchase_price: number;
   projected_selling_price: number;
   measure: string;
+};
+
+export const checkItemExistence = async (itemId: number) => {
+  const item = await supabase
+    .from("items")
+    .select("*")
+    .eq("id", itemId)
+    .single();
+  if (item.error) {
+    if (item.error.code === "02000") {
+      throw new Error(`Can't find item with id: ${itemId}`);
+    }
+    throw new Error(item.error.message ?? "Something went wrong");
+  }
+  return item.data;
 };

@@ -1,14 +1,14 @@
-import { FlatList, View } from "react-native";
+import { FlatList, TouchableOpacity, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  getAllCategoryTransactions,
-  deleteTransaction,
+  getAllPurchaseTransactions,
+  deleteItemTransaction,
 } from "@/service/transaction";
 import { SearchBar } from "./ui/searchbar";
 import { Button } from "./ui/button";
-import TransactionCard from "./TransactionCard";
+import PurchaseCard from "./PurchaseCard";
 import { Plus } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 import { router } from "expo-router";
@@ -16,36 +16,33 @@ import { Spinner } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
 
-const CategoryTransaction = () => {
+const PurchaseTransaction = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const primaryColor = useColor("primary");
   const red = useColor("red");
-
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
-  const filters = ["All", "Paid", "Unpaid", "Purchase", "Sale"];
+  const filters = ["All", "Paid", "Unpaid"];
   const debouncedSearchTerm = useDebounce(search, 300);
+
   const { data, error, isLoading, isSuccess, isError } = useQuery({
-    queryKey: ["categoryTransactions", filter, debouncedSearchTerm],
-    queryFn: () => getAllCategoryTransactions(1, search, filter, filter),
+    queryKey: ["purchaseTransactions", filter, debouncedSearchTerm],
+    queryFn: () => getAllPurchaseTransactions(1, search, filter),
   });
 
-  const handleDeleteTransaction = async (
-    transactionId: number,
-    categoryName: string
-  ) => {
+  const handleDeleteTransaction = async (transactionId: number) => {
     try {
-      await deleteTransaction(transactionId);
-      queryClient.invalidateQueries({ queryKey: ["categoryTransactions"] });
+      await deleteItemTransaction(transactionId);
+      queryClient.invalidateQueries({ queryKey: ["purchaseTransactions"] });
       toast({
-        title: "Transaction deleted successfully",
+        title: "Purchase deleted successfully",
         variant: "success",
       });
     } catch (error: any) {
       toast({
-        title: "Failed to delete transaction",
+        title: "Failed to delete purchase",
         description: error.message ?? "Something went wrong",
         variant: "error",
       });
@@ -56,7 +53,7 @@ const CategoryTransaction = () => {
     <View style={{ flex: 1 }}>
       <View style={{ padding: 16, paddingBottom: 8, marginBottom: 5 }}>
         <SearchBar
-          placeholder="Search transactions..."
+          placeholder="Search orders..."
           value={search}
           onChangeText={setSearch}
           showClearButton={true}
@@ -75,42 +72,36 @@ const CategoryTransaction = () => {
         }}
         keyExtractor={(item) => item}
         contentContainerStyle={{ gap: 8, height: 45 }}
-        renderItem={({ item }) => {
-          return (
-            <Button
-              key={item}
-              variant={filter === item ? "default" : "outline"}
-              size="sm"
-              onPress={() => setFilter(item)}
-              style={{ minWidth: 80 }}
-            >
-              {item}
-            </Button>
-          );
-        }}
+        renderItem={({ item }) => (
+          <Button
+            key={item}
+            variant={filter === item ? "default" : "outline"}
+            size="sm"
+            onPress={() => setFilter(item)}
+            style={{ minWidth: 80 }}
+          >
+            {item}
+          </Button>
+        )}
       />
-      {isLoading && (
+
+      {isLoading ? (
         <View
           style={{
             width: "100%",
-            display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            paddingVertical: "50%",
             flex: 1,
           }}
         >
-          <Spinner size="default" variant="dots" label="Fetching Categories" />
+          <Spinner size="default" variant="dots" label="Fetching Purchases" />
         </View>
-      )}
-      {isError && (
+      ) : isError ? (
         <View
           style={{
             width: "100%",
-            display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            paddingVertical: "50%",
             flex: 1,
           }}
         >
@@ -118,55 +109,16 @@ const CategoryTransaction = () => {
             {error.message ?? "Something went wrong"}
           </Text>
         </View>
-      )}
-      {isSuccess && data?.length === 0 && (
+      ) : isSuccess && data?.length === 0 ? (
         <View
           style={{
             width: "100%",
-            display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            paddingVertical: "35%",
             flex: 1,
           }}
         >
-          <Text variant="caption">{"No categories found"}</Text>
-        </View>
-      )}
-      {isSuccess && (
-        <View style={{flex: 1}}>
-          <FlatList
-            data={data}
-            keyExtractor={(item) => item.transaction_id.toString()}
-            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-            renderItem={({ item }) => (
-              <TransactionCard
-                handleDelete={() => {
-                  toast({
-                    title: `Are you sure you want to delete this transaction?`,
-                    duration: 10000,
-                    description: `${item.category_name} transaction will be marked as deleted`,
-                    variant: "warning",
-                    action: {
-                      label: "Delete",
-                      onPress: () => {
-                        handleDeleteTransaction(
-                          item.transaction_id,
-                          item.category_name
-                        );
-                      },
-                    },
-                  });
-                }}
-                handleEdit={() => {
-                  router.push(`/editCategoryTransaction/${item.transaction_id}`);
-                }}
-                transaction={item}
-                transactionType="category"
-              />
-            )}
-          />
-
+          <Text variant="caption">{"No purchases found"}</Text>
           <View
             style={{
               position: "absolute",
@@ -185,13 +137,68 @@ const CategoryTransaction = () => {
                 borderRadius: 28,
                 backgroundColor: primaryColor,
               }}
-              onPress={() => router.push("/editCategoryTransaction/new")}
+              onPress={() =>
+                router.push("/editItemTransaction/new?type=Purchase")
+              }
             />
           </View>
         </View>
-      )}
+      ) : isSuccess ? (
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={data}
+            keyExtractor={(item) => item.transaction_id.toString()}
+            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+            renderItem={({ item }) => (
+              <PurchaseCard
+                handleDelete={() => {
+                  toast({
+                    title: `Are you sure you want to delete this purchase?`,
+                    duration: 10000,
+                    description: `${item.item_name} purchase will be marked as deleted`,
+                    variant: "warning",
+                    action: {
+                      label: "Delete",
+                      onPress: () => {
+                        handleDeleteTransaction(item.transaction_id);
+                      },
+                    },
+                  });
+                }}
+                handleEdit={() => {
+                  router.push(`/editItemTransaction/${item.transaction_id}`);
+                }}
+                transaction={item}
+              />
+            )}
+          />
+          <View
+            style={{
+              position: "absolute",
+              bottom: 24,
+              right: 24,
+              zIndex: 1000,
+            }}
+          >
+            <Button
+              variant="default"
+              size="lg"
+              icon={Plus}
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: primaryColor,
+              }}
+              onPress={() =>
+                router.push("/editItemTransaction/new?type=Purchase")
+              }
+            />
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 };
 
-export default CategoryTransaction;
+export default PurchaseTransaction;

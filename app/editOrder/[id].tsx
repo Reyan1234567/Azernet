@@ -105,11 +105,11 @@ const EditOrder = () => {
       const { order } = data;
 
       reset({
-        partner: order.partner_id,
-        amount: order.amount,
-        price: order.pricePerItem,
-        unpaidAmount: order.unpaidAmount,
-        description: order.description,
+        partner: order.partner_id || undefined,
+        amount: order.amount || 0,
+        price: order.pricePerItem || 0,
+        unpaidAmount: order.unpaidAmount || 0,
+        description: order.description || "",
       });
 
       if (order.partner_id) {
@@ -119,8 +119,8 @@ const EditOrder = () => {
         });
       }
 
-      setAmount(order.amount);
-      setPrice(order.pricePerItem);
+      setAmount(order.amount || 0);
+      setPrice(order.pricePerItem || 0);
     }
   }, [isEditMode, data, reset]);
 

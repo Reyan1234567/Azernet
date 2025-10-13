@@ -1,58 +1,56 @@
 import { FlatList, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteOrder } from "@/service/transaction";
-
+import { useQuery /*useQueryClient */ } from "@tanstack/react-query";
+import { getAllSalesTransactions } from "@/service/transaction";
 import { SearchBar } from "./ui/searchbar";
 import { Button } from "./ui/button";
-import OrderCard from "./OrderCard";
+import SalesCard from "./SalesCard";
 import { Plus } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 import { router } from "expo-router";
 import { Spinner } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
-import { getAllOrders } from "@/service/orders";
 
-const OrdersComponent = () => {
+const SalesTransaction = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   const primaryColor = useColor("primary");
   const red = useColor("red");
-
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
-  const filters = ["All", "pending", "purchased", "delivered"];
+  const filters = ["All", "Paid", "Unpaid"];
   const debouncedSearchTerm = useDebounce(search, 300);
+
   const { data, error, isLoading, isSuccess, isError } = useQuery({
-    queryKey: ["orders", filter, debouncedSearchTerm],
-    queryFn: () => getAllOrders(1, search, filter),
+    queryKey: ["salesTransactions", filter, debouncedSearchTerm],
+    queryFn: () => getAllSalesTransactions(1, search, filter),
   });
 
-  const handleDeleteOrder = async (orderId: number, description: string) => {
-    try {
-      await deleteOrder(orderId);
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      toast({
-        title: "Order deleted successfully",
-        variant: "success",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Failed to delete order",
-        description: error.message ?? "Something went wrong",
-        variant: "error",
-      });
-    }
-  };
+  // const handleDeleteTransaction = async (transactionId: number) => {
+  //   try {
+  //     await deleteSalesTransaction(transactionId);
+  //     queryClient.invalidateQueries({ queryKey: ["salesTransactions"] });
+  //     toast({
+  //       title: "Sale deleted successfully",
+  //       variant: "success",
+  //     });
+  //   } catch (error: any) {
+  //     toast({
+  //       title: "Failed to delete sale",
+  //       description: error.message ?? "Something went wrong",
+  //       variant: "error",
+  //     });
+  //   }
+  // };
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ padding: 16, paddingBottom: 8, marginBottom: 5 }}>
         <SearchBar
-          placeholder="Search orders..."
+          placeholder="Search sales..."
           value={search}
           onChangeText={setSearch}
           showClearButton={true}
@@ -71,42 +69,36 @@ const OrdersComponent = () => {
         }}
         keyExtractor={(item) => item}
         contentContainerStyle={{ gap: 8, height: 45 }}
-        renderItem={({ item }) => {
-          return (
-            <Button
-              key={item}
-              variant={filter === item ? "default" : "outline"}
-              size="sm"
-              onPress={() => setFilter(item)}
-              style={{ minWidth: 80 }}
-            >
-              {item}
-            </Button>
-          );
-        }}
+        renderItem={({ item }) => (
+          <Button
+            key={item}
+            variant={filter === item ? "default" : "outline"}
+            size="sm"
+            onPress={() => setFilter(item)}
+            style={{ minWidth: 80 }}
+          >
+            {item}
+          </Button>
+        )}
       />
-      {isLoading && (
+
+      {isLoading ? (
         <View
           style={{
             width: "100%",
-            display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            paddingVertical: "50%",
             flex: 1,
           }}
         >
-          <Spinner size="default" variant="dots" label="Fetching Orders" />
+          <Spinner size="default" variant="dots" label="Fetching Sales" />
         </View>
-      )}
-      {isError && (
+      ) : isError ? (
         <View
           style={{
             width: "100%",
-            display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            paddingVertical: "50%",
             flex: 1,
           }}
         >
@@ -114,52 +106,16 @@ const OrdersComponent = () => {
             {error.message ?? "Something went wrong"}
           </Text>
         </View>
-      )}
-      {isSuccess && data?.length === 0 && (
+      ) : isSuccess && data?.length === 0 ? (
         <View
           style={{
             width: "100%",
-            display: "flex",
             justifyContent: "center",
             alignItems: "center",
             flex: 1,
           }}
         >
-          <Text variant="caption">{"No orders found"}</Text>
-        </View>
-      )}
-      {isSuccess && (
-        <View>
-          <FlatList
-            data={data}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={{ padding: 16 }}
-            renderItem={({ item }) => (
-              <OrderCard
-                handleDelete={() => {
-                  toast({
-                    title: `Are you sure you want to delete this order?`,
-                    duration: 10000,
-                    description: `${
-                      item.description || "Order"
-                    } will be marked as deleted`,
-                    variant: "warning",
-                    action: {
-                      label: "Delete",
-                      onPress: () => {
-                        handleDeleteOrder(item.id, item.description || "Order");
-                      },
-                    },
-                  });
-                }}
-                handleEdit={() => {
-                  router.push(`/editOrder/${item.id}`);
-                }}
-                order={item}
-              />
-            )}
-          />
-
+          <Text variant="caption">{"No sales found"}</Text>
           <View
             style={{
               position: "absolute",
@@ -178,13 +134,64 @@ const OrdersComponent = () => {
                 borderRadius: 28,
                 backgroundColor: primaryColor,
               }}
-              onPress={() => router.push("/editOrder/new")}
+              onPress={() => router.push("/editItemTransaction/new?type=Sale")}
             />
           </View>
         </View>
-      )}
+      ) : isSuccess ? (
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={data}
+            keyExtractor={(item) => item.transaction_id.toString()}
+            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+            renderItem={({ item }) => (
+              <SalesCard
+                handleDelete={() => {
+                  toast({
+                    title: `Are you sure you want to delete this sale?`,
+                    duration: 10000,
+                    description: `${item.item_name} sale will be marked as deleted`,
+                    variant: "warning",
+                    action: {
+                      label: "Delete",
+                      onPress: () => {
+                        // handleDeleteTransaction(item.transaction_id);
+                      },
+                    },
+                  });
+                }}
+                handleEdit={() => {
+                  router.push(`/editItemTransaction/${item.transaction_id}`);
+                }}
+                transaction={item}
+              />
+            )}
+          />
+          <View
+            style={{
+              position: "absolute",
+              bottom: 24,
+              right: 24,
+              zIndex: 1000,
+            }}
+          >
+            <Button
+              variant="default"
+              size="lg"
+              icon={Plus}
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: primaryColor,
+              }}
+              onPress={() => router.push("/editItemTransaction/new?type=Sale")}
+            />
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 };
 
-export default OrdersComponent;
+export default SalesTransaction;

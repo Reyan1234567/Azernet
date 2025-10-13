@@ -57,6 +57,7 @@ const CreateItemTransaction = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const transactionId = params.id as string;
+  const transactionType = params.type as string;
   const isEditMode = transactionId && transactionId !== "new";
 
   const {
@@ -69,7 +70,7 @@ const CreateItemTransaction = () => {
     defaultValues: {
       item: 0,
       partner: 0,
-      type: "",
+      type: transactionType || "",
       amount: 0,
       price: 0,
       unpaidAmount: 0,

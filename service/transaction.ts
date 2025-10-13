@@ -1,12 +1,10 @@
-import { CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 
 export type ItemTransactionDisplay = {
-  transaction_id: number;
+  id: number;
   amount: number;
   price_per_amount: number;
   unpaid_amount: number;
-  status: string;
   created_at: string;
   line_total: number;
   partner_first_name: string;
@@ -67,101 +65,104 @@ export type TransactionItem = {
 export const getAllItemTransactions = async (
   business_id_arg: number,
   search: string,
-  filter: string,
-  transactiontype: string
+  filter: string
 ) => {
-  //   search = search.trim();
-  //   let query = supabase
-  //     .from("transaction_item")
-  //     .select(
-  //       ` transactions!inner(
-  //             id,
-  //             amount,
-  //             price_per_amount,
-  //             unpaid_amount,
-  //             status,
-  //             created_at,
-  //             line_total,
-  //             partners!inner(
-  //                 first_name, last_name
-  //       )),
-  //         items!inner(
-  //             item_name
-  //         )
-  //         `
-  //     )
-  //     .eq("items.business_id", business_id)
-  //     .eq("transactions.is_deleted", false);
-
-  //   if (search !== "") {
-  //     query = query.or(
-  //       `items.item_name.ilike.%${search}%, transactions.partners.first_name.ilike.%${search}%, transactions.partners.last_name.ilike.%${search}%`
-  //     );
-  //   }
-  //   if (filter.trim() !== "") {
-  //     if (filter === "Paid" || filter === "Unpaid") {
-  //       if (filter === "Unpaid") {
-  //         query = query.gt("transactions.unpaid_amount", 0);
-  //       } else {
-  //         query = query.eq("transactions.unpaid_amount", 0);
-  //       }
-  //     } else {
-  //       if (filter !== "All") {
-  //         query = query.eq("transactions.status", filter);
-  //       }
-  //     }
-  //   }
-
-  //   const { data, error } = await query;
-
-  //   if (data) {
-  //     return data;
-  //   } else {
-  //     throw new Error(error.message);
-  //   }
-
-  let { data, error } = await supabase.rpc("getallitemtransactions", {
+  let { data, error } = await supabase.rpc("getallpurcahses", {
     business_id_arg,
     filter,
     search,
-    transactiontype,
   });
-  if (data) {
-    return data;
-  }
+  if (error) {
+    throw new Error(error.message);
+  } else return data;
 
-  throw new Error(error?.message ?? "Something went wrong");
+  // // Query the transactions table directly with joins to items
+  // let query = supabase
+  //   .from("purchases")
+  //   .select(
+  //     `
+  //     id,
+  //     amount,
+  //     price_per_amount,
+  //     unpaid_amount,
+  //     created_at,
+  //     line_total,
+  //     item_id,
+  //     items!inner(
+  //       id,
+  //       item_name,
+  //       business_id
+  //     )
+  //   `
+  //   )
+  //   .eq("items.business_id", business_id_arg)
+  //   .eq("is_deleted", false);
+
+  // Filter by transaction type if specified
+  // if (transactiontype && transactiontype !== "All") {
+  //   query = query.eq("status", transactiontype);
+  // }
+
+  // // Apply search filter
+  // if (search && search.trim() !== "") {
+  //   query = query.ilike("items.item_name", `%${search.trim()}%`);
+  // }
+
+  // // Apply payment status filter
+  // if (filter && filter !== "All") {
+  //   if (filter === "Paid") {
+  //     query = query.eq("unpaid_amount", 0);
+  //   } else if (filter === "Unpaid") {
+  //     query = query.gt("unpaid_amount", 0);
+  //   }
+  // }
+
+  // const { data, error } = await query.order("created_at", { ascending: false });
+
+  // if (data) {
+  //   // Transform the data to match ItemTransactionDisplay type
+  //   return data.map((transaction: any) => ({
+  //     transaction_id: transaction.id,
+  //     amount: transaction.amount || 0,
+  //     price_per_amount: transaction.price_per_amount || 0,
+  //     unpaid_amount: transaction.unpaid_amount || 0,
+  //     status: transaction.status || "",
+  //     created_at: transaction.purchase_date || new Date().toISOString(),
+  //     line_total: transaction.line_total || 0,
+  //     partner_first_name: "", // No partner info available
+  //     partner_last_name: "", // No partner info available
+  //     item_name: transaction.items?.item_name || "",
+  //   }));
+  // }
+
+  // throw new Error(error?.message ?? "Something went wrong");
 };
 
 export const getSingleItemTransaction = async (id: number) => {
   const { data, error } = await supabase
-    .from("transaction_item")
+    .from("transactions")
     .select(
       `
-      items!inner(id, item_name),
-      transactions!inner(*, partners(first_name, last_name))
+      *,
+      items!inner(id, item_name)
     `
     )
-    .eq("transactions.id", id)
-    .eq("transactions.is_deleted", false)
+    .eq("id", id)
+    .eq("is_deleted", false)
     .single();
 
   if (data) {
-    const transactions = Array.isArray(data.transactions)
-      ? data.transactions[0]
-      : data.transactions;
-    const items = Array.isArray(data.items) ? data.items[0] : data.items;
     return {
-      partner_id: transactions.partner_id,
-      partnerFirstname: transactions.partners.first_name,
-      partnerFastname: transactions.partners.last_name,
-      amount: transactions.amount,
-      pricePerItem: transactions.price_per_amount,
-      unpaidAmount: transactions.unpaid_amount,
-      lineTotal: transactions.line_total,
-      status: transactions.status,
-      item_id: items.id,
-      item_name: items.item_name,
+      partner_id: null, // No partner_id in current schema
+      partnerFirstname: "",
+      partnerLastname: "",
+      amount: data.amount || 0,
+      pricePerItem: data.price_per_amount || 0,
+      unpaidAmount: data.unpaid_amount || 0,
+      lineTotal: data.line_total || 0,
+      status: data.status || "",
+      item_id: data.items?.id || 0,
+      item_name: data.items?.item_name || "",
     };
   }
   throw new Error(error?.message ?? "Something went wrong");
@@ -192,23 +193,29 @@ export const editItemTransaction = async (
   transaction: ItemTransactionInputEdit,
   item_id?: number
 ) => {
+  const updateData: any = {
+    amount: transaction.amount,
+    price_per_amount: transaction.pricePerItem,
+    unpaid_amount: transaction.unpaidAmount,
+    status: transaction.status,
+    line_total: transaction.line_total,
+  };
+
+  // Update item_id_id if provided
+  if (item_id) {
+    updateData.item_id_id = item_id;
+  }
+
   const { data, error } = await supabase
     .from("transactions")
-    .update(transaction)
+    .update(updateData)
     .eq("id", transaction.id);
-  if (data) {
-    if (item_id) {
-      const res = await supabase
-        .from("transaction_item")
-        .update({ item_id })
-        .eq("transaction_id", transaction.id);
 
-      if (res.data) {
-        console.log("update successful: ", transaction.id);
-      }
-    }
+  if (error) {
+    throw new Error(error?.message ?? "Something went wrong");
   }
-  throw new Error(error?.message ?? "Something went wrong");
+
+  return data;
 };
 
 export const createItemTransaction = async (
@@ -221,25 +228,16 @@ export const createItemTransaction = async (
       price_per_amount: transaction.price,
       unpaid_amount: transaction.unpaidAmount,
       status: transaction.type,
-      partner_id: transaction.partner,
+      item_id_id: transaction.item, // Use item_id_id field from schema
       line_total: transaction.lineTotal,
       is_deleted: false,
+      purchase_date: new Date().toISOString(),
     })
     .select()
     .single();
 
   if (data) {
-    const res = await supabase
-      .from("transaction_item")
-      .insert({
-        transaction_id: data.id,
-        item_id: transaction.item,
-      })
-      .select();
-
-    if (res.data) {
-      return "item transaction created successfylly";
-    }
+    return "item transaction created successfully";
   }
 
   throw new Error(error?.message ?? "Something went wrong");
@@ -251,60 +249,67 @@ export const getAllCategoryTransactions = async (
   filter: string,
   transactiontype: string
 ) => {
-  //   let query = supabase
-  //     .from("transaction_category")
-  //     .select(
-  //       ` transactions!inner(
-  //             id,
-  //             amount,
-  //             price_per_amount,
-  //             unpaid_amount,
-  //             status,
-  //             created_at,
-  //             line_total,
-  //             partners(
-  //                 first_name, last_name
-  //     )),
-  //         categories!inner(
-  //             category_name
-  //         )
-  //         `
-  //     )
-  //     .eq("categories.business_id", business_id)
-  //     .eq("transactions.is_deleted", false);
+  // Query the transactions table directly with joins to categories
+  let query = supabase
+    .from("transactions")
+    .select(
+      `
+      id,
+      amount,
+      price_per_amount,
+      unpaid_amount,
+      status,
+      purchase_date,
+      line_total,
+      category_id,
+      categories!inner(
+        id,
+        category_name,
+        business_id
+      )
+    `
+    )
+    .eq("categories.business_id", business_id_arg)
+    .eq("is_deleted", false)
+    .not("category_id", "is", null); // Only get transactions with categories
 
-  //   if (search.trim() !== "") {
-  //     query = query.or(
-  //       `categories.category_name.ilike.%${search}%, transactions.partners.first_name.ilike.%${search}%, transactions.partners.last_name.ilike.%${search}%`
-  //     );
-  //   }
-  //   if (filter.trim() !== "" && filter !== "All") {
-  //     if (filter === "Unpaid") {
-  //       query = query.gt("transactions.unpaid_amount", 0);
-  //     } else {
-  //       query = query.eq("transactions.unpaid_amount", 0);
-  //     }
-  //   }
-  //   if (check.trim() !== "" && check !== "All") {
-  //     query = query.eq("transactions.status", filter);
-  //   }
+  // Filter by transaction type if specified
+  if (transactiontype && transactiontype !== "All") {
+    query = query.eq("status", transactiontype);
+  }
 
-  //   const { data, error } = await query;
+  // Apply search filter
+  if (search && search.trim() !== "") {
+    query = query.ilike("categories.category_name", `%${search.trim()}%`);
+  }
 
-  //   if (data) {
-  //     return data;
-  //   } else {
-  //     throw new Error(error.message);
-  //   }
+  // Apply payment status filter
+  if (filter && filter !== "All") {
+    if (filter === "Paid") {
+      query = query.eq("unpaid_amount", 0);
+    } else if (filter === "Unpaid") {
+      query = query.gt("unpaid_amount", 0);
+    }
+  }
 
-  let { data, error } = await supabase.rpc("getallcategorytransactions", {
-    business_id_arg,
-    filter,
-    search,
-    transactiontype,
+  const { data, error } = await query.order("purchase_date", {
+    ascending: false,
   });
+
   if (data) {
-    return data;
+    // Transform the data to match CategoryTransactionDisplay type
+    return data.map((transaction: any) => ({
+      transaction_id: transaction.id,
+      amount: transaction.amount || 0,
+      price_per_amount: transaction.price_per_amount || 0,
+      unpaid_amount: transaction.unpaid_amount || 0,
+      status: transaction.status || "",
+      created_at: transaction.purchase_date || new Date().toISOString(),
+      line_total: transaction.line_total || 0,
+      partner_first_name: "", // No partner info available
+      partner_last_name: "", // No partner info available
+      category_name: transaction.categories?.category_name || "",
+    }));
   }
 
   throw new Error(error?.message ?? "Something went wrong");
@@ -312,35 +317,29 @@ export const getAllCategoryTransactions = async (
 
 export const getSingleCategoryTransaction = async (id: number) => {
   const { data, error } = await supabase
-    .from("transaction_category")
+    .from("transactions")
     .select(
       `
-      categories!inner(id, category_name),
-      transactions!inner(*, partners(first_name, last_name))
+      *,
+      categories!inner(id, category_name)
     `
     )
-    .eq("transactions.id", id)
-    .eq("transactions.is_deleted", false)
+    .eq("id", id)
+    .eq("is_deleted", false)
     .single();
 
   if (data) {
-    const transactions = Array.isArray(data.transactions)
-      ? data.transactions[0]
-      : data.transactions;
-    const categories = Array.isArray(data.categories)
-      ? data.categories[0]
-      : data.categories;
     return {
-      partner_id: transactions.partner_id,
-      partnerFirstname: transactions.partners.first_name,
-      partnerFastname: transactions.partners.last_name,
-      amount: transactions.amount,
-      pricePerItem: transactions.price_per_amount,
-      unpaidAmount: transactions.unpaid_amount,
-      lineTotal: transactions.line_total,
-      status: transactions.status,
-      category_id: categories.id,
-      category_name: categories.category_name,
+      partner_id: null, // No partner_id in current schema
+      partnerFirstname: "",
+      partnerLastname: "",
+      amount: data.amount || 0,
+      pricePerItem: data.price_per_amount || 0,
+      unpaidAmount: data.unpaid_amount || 0,
+      lineTotal: data.line_total || 0,
+      status: data.status || "",
+      category_id: data.categories?.id || 0,
+      category_name: data.categories?.category_name || "",
     };
   }
   throw new Error(error?.message ?? "Something went wrong");
@@ -379,25 +378,16 @@ export const createCategoryTransaction = async (
       price_per_amount: transaction.price,
       unpaid_amount: transaction.unpaidAmount,
       status: transaction.type,
-      partner_id: transaction.partner,
+      category_id: transaction.category, // Use category_id field from schema
       line_total: transaction.lineTotal,
       is_deleted: false,
+      purchase_date: new Date().toISOString(),
     })
     .select()
     .single();
 
   if (data) {
-    const res = await supabase
-      .from("transaction_category")
-      .insert({
-        transaction_id: data.id,
-        category_id: transaction.category,
-      })
-      .select();
-
-    if (res.data) {
-      return "item transaction created successfylly";
-    }
+    return "category transaction created successfully";
   }
 
   throw new Error(error?.message ?? "Something went wrong");
@@ -454,16 +444,16 @@ export const getListOfCategories = async (business_id: number) => {
 // Orders (transactions without item/category)
 export type OrderTransactionDisplay = {
   id: number;
-  amount: number;
-  price_per_amount: number;
-  unpaid_amount: number;
-  status: string;
-  created_at: string;
-  line_total: number;
-  description?: string;
+  amount: number | null;
+  price_per_amount: number | null;
+  unpaid_amount: number | null;
+  status: string | null;
+  created_at: string | null;
+  line_total: number | null;
+  description?: string | null;
   partners?: {
-    first_name: string;
-    last_name: string;
+    first_name: string | null;
+    last_name: string | null;
   } | null;
 };
 
@@ -479,61 +469,26 @@ export type OrderTransactionInput = {
 };
 
 export const getAllOrders = async (
-  business_id: number,
+  business_id_args: number,
   search: string,
   filter: string
 ) => {
-  const query = supabase
-    .from("transactions")
-    .select(
-      `id,
-       amount,
-       price_per_amount,
-       unpaid_amount,
-       status,
-       created_at,
-       line_total,
-       description,
-       partners!left(first_name, last_name)`
-    )
-    .eq("business_id", business_id)
-    .eq("is_deleted", false)
-    .eq("status", "order");
-
-  if (search.trim() !== "") {
-    query.or(
-      `description.ilike.%${search}%, partners.first_name.ilike.%${search}%, partners.last_name.ilike.%${search}%`
+  let { data, error } = await supabase.rpc("getallorders", {
+    business_id_args,
+    filter,
+    search,
+  });
+  if (error) {
+    throw new Error(
+      error.message ?? "Something went wrong when getting All orders"
     );
-  }
-
-  if (filter.trim() !== "" && filter !== "All") {
-    if (filter === "Paid") {
-      query.eq("unpaid_amount", 0);
-    } else if (filter === "Unpaid") {
-      query.gt("unpaid_amount", 0);
-    }
-  }
-
-  const { data, error } = await query.order("created_at", { ascending: false });
-
-  if (data) {
-    // Transform the data to handle partners array from Supabase
-    return data.map((order: any) => ({
-      ...order,
-      partners:
-        Array.isArray(order.partners) && order.partners.length > 0
-          ? order.partners[0]
-          : null,
-    }));
-  } else {
-    throw new Error(error.message);
-  }
+  } else return data;
 };
 
 export const getSingleOrder = async (id: number) => {
   const { data, error } = await supabase
     .from("transactions")
-    .select(`*, partners(first_name, last_name)`)
+    .select(`*`)
     .eq("id", id)
     .eq("is_deleted", false)
     .eq("status", "order")
@@ -541,14 +496,14 @@ export const getSingleOrder = async (id: number) => {
 
   if (data) {
     return {
-      partner_id: data.partner_id,
-      partnerFirstname: data.partners?.first_name || "",
-      partnerLastname: data.partners?.last_name || "",
+      partner_id: null, // No partner_id in current schema
+      partnerFirstname: "",
+      partnerLastname: "",
       amount: data.amount,
       pricePerItem: data.price_per_amount,
       unpaidAmount: data.unpaid_amount,
       lineTotal: data.line_total,
-      description: data.description || "",
+      description: data.measure || "", // Using measure as description
     };
   }
   throw new Error(error?.message ?? "Something went wrong");
@@ -562,10 +517,8 @@ export const createOrder = async (order: OrderTransactionInput) => {
       price_per_amount: order.price,
       unpaid_amount: order.unpaidAmount,
       status: "order",
-      partner_id: order.partner || null,
       line_total: order.lineTotal,
-      description: order.description || "",
-      business_id: 1, // Replace with actual business ID from context/auth
+      measure: order.description || "", // Using measure field for description
       is_deleted: false,
     })
     .select()
@@ -585,9 +538,8 @@ export const editOrder = async (order: OrderTransactionInput) => {
       amount: order.amount,
       price_per_amount: order.price,
       unpaid_amount: order.unpaidAmount,
-      partner_id: order.partner || null,
       line_total: order.lineTotal,
-      description: order.description || "",
+      measure: order.description || "", // Using measure field for description
     })
     .eq("id", order.id);
 
@@ -598,4 +550,23 @@ export const editOrder = async (order: OrderTransactionInput) => {
 
 export const deleteOrder = async (id: number) => {
   return deleteTransaction(id);
+};
+
+// Purchase-specific functions
+export const getAllPurchaseTransactions = async (
+  business_id_arg: number,
+  search: string,
+  filter: string
+) => {
+  // Use the corrected getAllItemTransactions function with Purchase filter
+  return getAllItemTransactions(business_id_arg, search, filter);
+};
+
+export const getAllSalesTransactions = async (
+  business_id_arg: number,
+  search: string,
+  filter: string
+) => {
+  // Use the corrected getAllItemTransactions function with Sale filter
+  return getAllItemTransactions(business_id_arg, search, filter);
 };

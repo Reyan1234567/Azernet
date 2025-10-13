@@ -4,7 +4,13 @@ import { PlatformPressable } from "@react-navigation/elements";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { Tabs } from "expo-router";
-import { Home, Stars } from "lucide-react-native";
+import {
+  Home,
+  ShoppingCart,
+  DollarSign,
+  Package,
+  Building2,
+} from "lucide-react-native";
 import React from "react";
 import { Platform, StyleSheet } from "react-native";
 
@@ -56,7 +62,12 @@ export default function TabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color }) => (
-            <Icon name={Home} size={24} color={color} />
+            <Icon
+              name={Home}
+              size={24}
+              color={color}
+              style={{ marginRight: 4 }}
+            />
           ),
         }}
       />
@@ -66,16 +77,40 @@ export default function TabLayout() {
         options={{
           title: "Orders",
           tabBarIcon: ({ color }) => (
-            <Icon name={Stars} size={24} color={color} />
+            <Icon
+              name={ShoppingCart}
+              size={24}
+              color={color}
+              style={{ marginRight: 4 }}
+            />
           ),
         }}
       />
       <Tabs.Screen
-        name="transactions"
+        name="sales"
         options={{
-          title: "Transactions",
+          title: "Sales",
           tabBarIcon: ({ color }) => (
-            <Icon name={Stars} size={24} color={color} />
+            <Icon
+              name={DollarSign}
+              size={24}
+              color={color}
+              style={{ marginRight: 4 }}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="purchases"
+        options={{
+          title: "Purchases",
+          tabBarIcon: ({ color }) => (
+            <Icon
+              name={Package}
+              size={24}
+              color={color}
+              style={{ marginRight: 4 }}
+            />
           ),
         }}
       />
@@ -84,7 +119,12 @@ export default function TabLayout() {
         options={{
           title: "Businesses",
           tabBarIcon: ({ color }) => (
-            <Icon name={Stars} size={24} color={color} />
+            <Icon
+              name={Building2}
+              size={24}
+              color={color}
+              style={{ marginRight: 4 }}
+            />
           ),
         }}
       />

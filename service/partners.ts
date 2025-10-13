@@ -99,3 +99,14 @@ export const getSinglePartner = async (id: number): Promise<Partner> => {
   }
   throw new Error(error?.message ?? "Partner not found");
 };
+
+export const checkPartnerExistence = async (partnerId: number) => {
+  const partner = await supabase.from("items").select("id").eq("id", partnerId);
+  if (partner.error) {
+    if (partner.error.code === "02000") {
+      throw new Error(`Can't find partner with id: ${partnerId}`);
+    }
+    throw new Error(partner.error.message ?? "Something went wrong");
+  }
+  return partner.data;
+};

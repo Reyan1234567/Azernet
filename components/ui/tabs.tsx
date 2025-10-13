@@ -95,9 +95,11 @@ export function Tabs({
   const [tabValues, setTabValues] = useState<string[]>([]);
   const [tabContents, setTabContents] = useState<{ [key: string]: React.ReactNode }>({});
 
+  // Determine if we're in controlled or uncontrolled mode
   const isControlled = value !== undefined;
   const activeTab = isControlled ? value : internalActiveTab;
 
+  // Update internal state when value prop changes (controlled mode)
   useEffect(() => {
     if (isControlled && value !== internalActiveTab) {
       setInternalActiveTab(value);
@@ -128,13 +130,7 @@ export function Tabs({
   }, []);
 
   const registerTabContent = useCallback((value: string, content: React.ReactNode) => {
-    setTabContents(prev => {
-      // Only update if content actually changed
-      if (prev[value] === content) {
-        return prev;
-      }
-      return { ...prev, [value]: content };
-    });
+    setTabContents(prev => ({ ...prev, [value]: content }));
   }, []);
 
   const unregisterTabContent = useCallback((value: string) => {
@@ -199,39 +195,48 @@ export function Tabs({
   );
 }
 
-// Content Storage Component - FIXED: Memoized content
-const TabContentStorage = React.memo(({ 
-  value, 
-  children,
-  isActive 
-}: { 
-  value: string; 
+// Carousel Tab Content Component
+interface CarouselTabContentProps {
   children: React.ReactNode;
-  isActive: boolean;
-}) => {
-  const { registerTabContent, unregisterTabContent } = useTabsContext();
-  const contentRef = useRef<React.ReactNode>(null);
+  value: string;
+  style?: ViewStyle;
+}
 
-  // Store the latest content
-  contentRef.current = children;
+function CarouselTabContent({
+  children,
+  value,
+  style,
+}: CarouselTabContentProps) {
+  const { 
+    activeTab, 
+    navigateToAdjacentTab, 
+    tabValues,
+    registerTabContent,
+    unregisterTabContent
+  } = useTabsContext();
 
+  // Register content when component mounts
   useEffect(() => {
-    // Only register if active or if we have content to preserve
-    if (isActive || contentRef.current) {
-      registerTabContent(value, contentRef.current);
-    }
-    return () => {
-      // Only unregister if not active and we're sure we don't need it
-      if (!isActive) {
-        unregisterTabContent(value);
-      }
-    };
-  }, [value, isActive, registerTabContent, unregisterTabContent]);
+    registerTabContent(value, children);
+    return () => unregisterTabContent(value);
+  }, [value, children, registerTabContent, unregisterTabContent]);
 
-  return null; // This component doesn't render anything
-});
+  // Only render the carousel container for the active tab
+  if (activeTab !== value) {
+    return null;
+  }
 
-// Carousel Container Component - FIXED: Stable content rendering
+  return (
+    <CarouselContainer
+      activeTab={activeTab}
+      tabValues={tabValues}
+      onSwipe={navigateToAdjacentTab!}
+      style={style}
+    />
+  );
+}
+
+// Carousel Container Component
 function CarouselContainer({
   activeTab,
   tabValues,
@@ -263,6 +268,7 @@ function CarouselContainer({
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
+    .failOffsetY([-10, 10])
     .onBegin(() => {
       isGestureActive.value = true;
     })
@@ -279,17 +285,24 @@ function CarouselContainer({
         return;
       }
 
-      const threshold = containerWidth * 0.2;
-      const shouldChangeTab = Math.abs(event.translationX) > threshold;
+      const threshold = containerWidth * 0.15;
+      const velocity = Math.abs(event.velocityX);
+      const translation = event.translationX;
+
+      const shouldChangeTab =
+        Math.abs(translation) > threshold || velocity > 500;
 
       if (shouldChangeTab) {
-        if (event.translationX > 0 && currentIndex > 0) {
+        if (translation > 0 && currentIndex > 0) {
           runOnJS(onSwipe)('prev');
-        } else if (event.translationX < 0 && currentIndex < tabValues.length - 1) {
+        } else if (translation < 0 && currentIndex < tabValues.length - 1) {
           runOnJS(onSwipe)('next');
+        } else {
+          translateX.value = withTiming(0, { duration: 300 });
         }
+      } else {
+        translateX.value = withTiming(0, { duration: 300 });
       }
-      translateX.value = withTiming(0, { duration: 300 });
     });
 
   const getPreviousTab = () => {
@@ -307,23 +320,21 @@ function CarouselContainer({
 
   const containerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
-    width: containerWidth,
   }));
 
   const previousStyle = useAnimatedStyle(() => {
     if (containerWidth === 0) return { opacity: 0 };
-    
+
     const opacity = interpolate(
       translateX.value,
-      [0, containerWidth * 0.3],
-      [0, 0.8],
+      [0, containerWidth * 0.5],
+      [0, 1],
       Extrapolate.CLAMP
     );
 
     return {
       transform: [{ translateX: translateX.value - containerWidth }],
       opacity: previousTab ? opacity : 0,
-      width: containerWidth,
     };
   });
 
@@ -332,35 +343,24 @@ function CarouselContainer({
 
     const opacity = interpolate(
       translateX.value,
-      [-containerWidth * 0.3, 0],
-      [0.8, 0],
+      [-containerWidth * 0.5, 0],
+      [1, 0],
       Extrapolate.CLAMP
     );
 
     return {
       transform: [{ translateX: translateX.value + containerWidth }],
       opacity: nextTab ? opacity : 0,
-      width: containerWidth,
     };
   });
-
-  // FIXED: Render actual content directly for active tab, stored content for adjacent
-  const renderContent = (content: React.ReactNode, isActive: boolean) => (
-    <View style={{ flex: 1, width: '100%' }}>
-      {content}
-    </View>
-  );
 
   return (
     <GestureDetector gesture={panGesture}>
       <View 
-        style={{ 
-          flex: 1, 
-          width: '100%',
-        }} 
+        style={{ flex: 1, width: '100%' }} 
         onLayout={onLayout}
       >
-        {containerWidth > 0 ? (
+        {containerWidth > 0 && (
           <>
             {/* Previous content */}
             {previousTab && (
@@ -373,11 +373,12 @@ function CarouselContainer({
                     left: 0,
                     top: 0,
                   },
+                  style,
                   previousStyle,
                 ]}
                 pointerEvents="none"
               >
-                {renderContent(tabContents[previousTab], false)}
+                {tabContents[previousTab]}
               </Animated.View>
             )}
 
@@ -388,10 +389,11 @@ function CarouselContainer({
                   flex: 1,
                   width: containerWidth,
                 },
+                style,
                 containerStyle,
               ]}
             >
-              {renderContent(tabContents[activeTab], true)}
+              {tabContents[activeTab]}
             </Animated.View>
 
             {/* Next content */}
@@ -405,19 +407,15 @@ function CarouselContainer({
                     left: 0,
                     top: 0,
                   },
+                  style,
                   nextStyle,
                 ]}
                 pointerEvents="none"
               >
-                {renderContent(tabContents[nextTab], false)}
+                {tabContents[nextTab]}
               </Animated.View>
             )}
           </>
-        ) : (
-          // Fallback while measuring
-          <View style={{ flex: 1, width: '100%' }}>
-            {renderContent(tabContents[activeTab], true)}
-          </View>
         )}
       </View>
     </GestureDetector>
@@ -465,6 +463,7 @@ export function TabsTrigger({
     useTabsContext();
   const isActive = activeTab === value;
 
+  // Register/unregister tab for swipe navigation
   useEffect(() => {
     registerTab(value);
     return () => unregisterTab(value);
@@ -528,29 +527,14 @@ export function TabsContent({ children, value, style }: TabsContentProps) {
     navigateToAdjacentTab,
     tabValues,
   } = useTabsContext();
-  
   const isActive = activeTab === value;
 
   // For carousel mode with swipe enabled
   if (enableSwipe && orientation === 'horizontal' && navigateToAdjacentTab) {
     return (
-      <>
-        {/* FIXED: Separate content storage from rendering */}
-        <TabContentStorage value={value} isActive={isActive}>
-          {children}
-        </TabContentStorage>
-        
-        {/* Only render carousel for active tab */}
-        {isActive && (
-          <View style={[{ flex: 1, width: '100%' }, style]}>
-            <CarouselContainer
-              activeTab={activeTab}
-              tabValues={tabValues}
-              onSwipe={navigateToAdjacentTab}
-            />
-          </View>
-        )}
-      </>
+      <CarouselTabContent value={value} style={[{ flex: 1, width: '100%' }, style]}>
+        {children}
+      </CarouselTabContent>
     );
   }
 
@@ -560,8 +544,19 @@ export function TabsContent({ children, value, style }: TabsContentProps) {
   }
 
   return (
-    <View style={[{ flex: 1, width: '100%' }, style]}>
-      {children}
+    <View
+      style={[
+        {
+          flex: 1,
+          width: '100%',
+          alignSelf: 'stretch',
+        },
+        style,
+      ]}
+    >
+      <View style={{ flex: 1, width: '100%' }}>
+        {children}
+      </View>
     </View>
   );
 }
