@@ -1,4 +1,4 @@
-import { FlatList, TouchableOpacity, View } from "react-native";
+import { FlatList, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,34 +15,35 @@ import { router } from "expo-router";
 import { Spinner } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
+import { reversePurchase } from "@/service/reversals";
 
 const PurchaseTransaction = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const primaryColor = useColor("primary");
   const red = useColor("red");
+  const textColor = useColor("text");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
 
   const filters = ["All", "Paid", "Unpaid"];
   const debouncedSearchTerm = useDebounce(search, 300);
-
   const { data, error, isLoading, isSuccess, isError } = useQuery({
     queryKey: ["purchaseTransactions", filter, debouncedSearchTerm],
     queryFn: () => getAllPurchaseTransactions(1, search, filter),
   });
 
-  const handleDeleteTransaction = async (transactionId: number) => {
+  const handleReverseTransaction = async (transactionId: number) => {
     try {
-      await deleteItemTransaction(transactionId);
+      await reversePurchase(transactionId);
       queryClient.invalidateQueries({ queryKey: ["purchaseTransactions"] });
       toast({
-        title: "Purchase deleted successfully",
+        title: "Purchase reversed successfully",
         variant: "success",
       });
     } catch (error: any) {
       toast({
-        title: "Failed to delete purchase",
+        title: "Failed to reverse purchase",
         description: error.message ?? "Something went wrong",
         variant: "error",
       });
@@ -137,9 +138,7 @@ const PurchaseTransaction = () => {
                 borderRadius: 28,
                 backgroundColor: primaryColor,
               }}
-              onPress={() =>
-                router.push("/editItemTransaction/new?type=Purchase")
-              }
+              onPress={() => router.push("/createPurchaseOrSale?type=purchase")}
             />
           </View>
         </View>
@@ -147,26 +146,23 @@ const PurchaseTransaction = () => {
         <View style={{ flex: 1 }}>
           <FlatList
             data={data}
-            keyExtractor={(item) => item.transaction_id.toString()}
+            keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
             renderItem={({ item }) => (
               <PurchaseCard
-                handleDelete={() => {
+                handleReverse={() => {
                   toast({
-                    title: `Are you sure you want to delete this purchase?`,
+                    title: `Are you sure you want to reverse this purchase?`,
                     duration: 10000,
-                    description: `${item.item_name} purchase will be marked as deleted`,
+                    description: `${item.item_name} purchase will be reversed`,
                     variant: "warning",
                     action: {
-                      label: "Delete",
+                      label: "Reverse",
                       onPress: () => {
-                        handleDeleteTransaction(item.transaction_id);
+                        handleReverseTransaction(item.id);
                       },
                     },
                   });
-                }}
-                handleEdit={() => {
-                  router.push(`/editItemTransaction/${item.transaction_id}`);
                 }}
                 transaction={item}
               />
@@ -190,9 +186,7 @@ const PurchaseTransaction = () => {
                 borderRadius: 28,
                 backgroundColor: primaryColor,
               }}
-              onPress={() =>
-                router.push("/editItemTransaction/new?type=Purchase")
-              }
+              onPress={() => router.push("/createPurchaseOrSale?type=purchase")}
             />
           </View>
         </View>

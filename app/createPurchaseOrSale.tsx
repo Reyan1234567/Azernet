@@ -1,7 +1,7 @@
 import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,34 +17,28 @@ import {
 } from "@/components/ui/combobox";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Separator } from "@/components/ui/separator";
-import { Picker } from "@/components/ui/picker";
 import * as z from "zod";
 import { useColor } from "@/hooks/useColor";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  createItemTransaction,
-  getListOfItems,
-  getListOfPartners,
-  getSingleItemTransaction,
-} from "@/service/transaction";
-import { ArrowLeft } from "lucide-react-native";
+import { getListOfItems, getListOfPartners } from "@/service/transaction";
 import CreateItemForm from "@/components/CreateItemForm";
 import CreatePartnerForm from "@/components/CreatePartnerForm";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
-import { useQuery } from "@tanstack/react-query";
+import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
+import { purchase } from "@/service/purchase";
+import { sell } from "@/service/sale";
 
 const formSchema = z.object({
   item: z
     .number({ required_error: "Item must be a number" })
     .min(1, "Choose a valid item"),
   partner: z.number({ required_error: "Type must be a number" }).optional(),
-  type: z.string().min(1, "type is required"),
-  amount: z
+  numberOfItems: z
     .number({ required_error: "Type must be a number" })
-    .min(1, "Fill in a valid amount"),
+    .min(1, "Fill in a valid number of Items"),
   price: z
     .number({ required_error: "Type must be a number" })
     .min(1, "Fill in a valid price"),
@@ -53,26 +47,23 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const EditItemTransaction = () => {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const transactionId = params.id as string;
-  const transactionType = params.type as string;
-  const isEditMode = transactionId && transactionId !== "new";
+const CreatePurchaseOrSale = () => {
   const { toast } = useToast();
+  const params = useLocalSearchParams();
+  const queryClient = useQueryClient();
+  const typeParam = params.type?.toString().toLowerCase();
+  const isPurchase = typeParam === "purchase";
 
   const {
     control,
     handleSubmit,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       item: 0,
       partner: 0,
-      type: transactionType || "",
-      amount: 0,
+      numberOfItems: 0,
       price: 0,
       unpaidAmount: 0,
     },
@@ -91,53 +82,20 @@ const EditItemTransaction = () => {
     useState(false);
   const [itemComboboxKey, setItemComboboxKey] = useState(0);
   const [partnerComboboxKey, setPartnerComboboxKey] = useState(0);
-  const [amount, setAmount] = useState(0);
+  const [numberOfItems, setNumberOfItems] = useState(0);
   const [price, setPrice] = useState(0);
 
   // One unified useQuery to fetch all data
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["editTransactionData", transactionId],
+    queryKey: ["createPurchase"],
     queryFn: async () => {
-      const [items, partners, transaction] = await Promise.all([
+      const [items, partners] = await Promise.all([
         getListOfItems(1),
         getListOfPartners(1),
-        isEditMode
-          ? getSingleItemTransaction(Number(transactionId))
-          : Promise.resolve(null),
       ]);
-      return { items, partners, transaction };
+      return { items, partners };
     },
-    enabled: !!transactionId,
   });
-
-  // Reset form when data is loaded (only in edit mode)
-  useEffect(() => {
-    if (isEditMode && data?.transaction) {
-      const { transaction } = data;
-
-      reset({
-        item: transaction.item_id,
-        partner: transaction.partner_id,
-        type: transaction.status,
-        amount: transaction.amount,
-        price: transaction.pricePerItem,
-        unpaidAmount: transaction.unpaidAmount,
-      });
-
-      setSelectedItem({
-        value: transaction.item_id.toString(),
-        label: transaction.item_name,
-      });
-
-      setSelectedPartner({
-        value: transaction.partner_id.toString(),
-        label: `${transaction.partnerFirstname} ${transaction.partnerFastname}`,
-      });
-
-      setAmount(transaction.amount);
-      setPrice(transaction.pricePerItem);
-    }
-  }, [isEditMode, data, reset]);
 
   const handleOpenItemBottomSheet = () => {
     setItemComboboxKey((prev) => prev + 1);
@@ -149,36 +107,48 @@ const EditItemTransaction = () => {
     setPartnerBottomSheetVisible(true);
   };
 
-  const transactionTypes: OptionType[] = [
-    { value: "Sale", label: "Sale" },
-    { value: "Purchase", label: "Purchase" },
-  ];
-  const secondaryBg=useColor("card")
-  const lineTotal = amount && price ? (amount * price).toFixed(2) : "0.00";
+  const secondaryBg = useColor("card");
+  const lineTotal =
+    numberOfItems && price ? (numberOfItems * price).toFixed(2) : "0.00";
 
   const onSubmit = async (formData: FormData) => {
     try {
-      await createItemTransaction({
-        item: formData.item,
-        partner: formData.partner || 0,
-        type: formData.type,
-        amount: formData.amount,
-        price: formData.price,
-        unpaidAmount: formData.unpaidAmount,
-        lineTotal: Number(lineTotal),
-      });
-      toast({
-        title: isEditMode
-          ? "Transaction updated successfully"
-          : "Transaction created successfully",
-        variant: "success",
-      });
+      if (isPurchase) {
+        await purchase({
+          itemId: formData.item,
+          partnerId: formData.partner || 0,
+          numberOfItems: formData.numberOfItems,
+          pricePerItem: formData.price,
+          unpaidAmount: formData.unpaidAmount,
+          is_deleted: false,
+        });
+        toast({
+          title: "Purchase record created successfully",
+          variant: "success",
+        });
+        queryClient.invalidateQueries({ queryKey: ["purchaseTransactions"] });
+      } else {
+        await sell(
+          formData.item,
+          formData.partner || 0,
+          formData.numberOfItems,
+          formData.price,
+          formData.unpaidAmount,
+          false
+        );
+        toast({
+          title: "Sale record created successfully",
+          variant: "success",
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["salesTransactions"] });
+
       router.back();
     } catch (e) {
       toast({
-        title: isEditMode
-          ? "Failed to update transaction"
-          : "Failed to create transaction",
+        title: isPurchase
+          ? "Failed To Record Purchase"
+          : "Failed To Record Sale",
         variant: "error",
       });
     }
@@ -198,11 +168,7 @@ const EditItemTransaction = () => {
             alignItems: "center",
           }}
         >
-          <Spinner
-            size="default"
-            variant="dots"
-            label="Loading transaction..."
-          />
+          <Spinner size="default" variant="dots" label="Loading..." />
         </View>
       </SafeAreaView>
     );
@@ -220,7 +186,7 @@ const EditItemTransaction = () => {
           }}
         >
           <Text style={{ color: red, marginBottom: 16 }}>
-            {error?.message ?? "Failed to load transaction"}
+            {error?.message ?? "Connect to the internet and try again!"}
           </Text>
           <Button onPress={handleGoBack}>Go Back</Button>
         </View>
@@ -240,9 +206,6 @@ const EditItemTransaction = () => {
             paddingBottom: 0,
           }}
         >
-          <TouchableOpacity onPress={handleGoBack} style={{ marginRight: 16 }}>
-            <ArrowLeft size={24} color={textColor} />
-          </TouchableOpacity>
           <Text
             variant="title"
             style={{
@@ -251,7 +214,7 @@ const EditItemTransaction = () => {
               color: textColor,
             }}
           >
-            {isEditMode ? "Edit Transaction" : "Create Transaction"}
+            {isPurchase ? "Create Purchase" : "Create Sale"}
           </Text>
         </View>
 
@@ -295,7 +258,7 @@ const EditItemTransaction = () => {
               )}
             />
             {errors.item && (
-              <Text style={{ color: red, fontSize: 12 }}>
+              <Text style={{ color: red, fontSize: 14 }}>
                 {errors.item.message}
               </Text>
             )}
@@ -339,41 +302,24 @@ const EditItemTransaction = () => {
             <Separator style={{ marginVertical: 15 }} />
             <Controller
               control={control}
-              name="type"
-              render={({ field }) => (
-                <Picker
-                  options={transactionTypes}
-                  value={field.value}
-                  label="Type"
-                  onValueChange={field.onChange}
-                  placeholder="Select Sale or Purchase"
-                />
-              )}
-            />
-            {errors.type && (
-              <Text variant="caption" style={{ color: red }}>
-                Type is required
-              </Text>
-            )}
-            <Controller
-              control={control}
-              name="amount"
+              name="numberOfItems"
               render={({ field }) => (
                 <Input
-                  label="Amount"
+                  label="Number of Items"
                   placeholder="Enter quantity"
                   value={field.value.toString()}
                   onChangeText={(text) => {
-                    setAmount(Number(text));
+                    text = text.trim().replace(/\D/g, "");
+                    setNumberOfItems(Number(text));
                     field.onChange(Number(text));
                   }}
                   keyboardType="numeric"
                 />
               )}
             />
-            {errors.amount && (
-              <Text variant="caption" style={{ color: red }}>
-                Amount is required
+            {errors.numberOfItems && (
+              <Text variant="caption" style={{ color: red, fontSize: 14 }}>
+                {errors.numberOfItems.message}
               </Text>
             )}
             <Controller
@@ -385,6 +331,7 @@ const EditItemTransaction = () => {
                   placeholder="Enter unit price"
                   value={field.value.toString()}
                   onChangeText={(text) => {
+                    text = text.trim().replace(/\D/g, "");
                     setPrice(Number(text));
                     field.onChange(Number(text));
                   }}
@@ -393,7 +340,7 @@ const EditItemTransaction = () => {
               )}
             />
             {errors.price && (
-              <Text variant="caption" style={{ color: red }}>
+              <Text variant="caption" style={{ color: red, fontSize: 14 }}>
                 Price is required
               </Text>
             )}
@@ -402,10 +349,13 @@ const EditItemTransaction = () => {
               name="unpaidAmount"
               render={({ field }) => (
                 <Input
-                  label="Unpaid Amount"
+                  label="Unpaid numberOfItems"
                   placeholder="Total in ETB"
                   value={field.value.toString()}
-                  onChangeText={(text) => field.onChange(Number(text))}
+                  onChangeText={(text) => {
+                    text = text.trim().replace(/\D/g, "");
+                    field.onChange(Number(text));
+                  }}
                   keyboardType="numeric"
                 />
               )}
@@ -413,7 +363,7 @@ const EditItemTransaction = () => {
             <BottomSheet
               isVisible={isItemBottomSheetVisible}
               onClose={() => setItemBottomSheetVisible(false)}
-            //   title="Create Item"
+              //   title="Create Item"
               snapPoints={[0.8, 0.8]}
               enableBackdropDismiss={false}
             >
@@ -465,14 +415,8 @@ const EditItemTransaction = () => {
             </View>
             <Separator style={{ marginVertical: 15 }} />
 
-            <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
-              {isSubmitting
-                ? isEditMode
-                  ? "Updating..."
-                  : "Creating..."
-                : isEditMode
-                ? "Update Transaction"
-                : "Create Transaction"}
+            <Button onPress={handleSubmit(onSubmit)} loading={isSubmitting}>
+              {isPurchase ? "Create Purchase" : "Create Sale"}
             </Button>
           </View>
         </ScrollView>
@@ -481,4 +425,4 @@ const EditItemTransaction = () => {
   );
 };
 
-export default EditItemTransaction;
+export default CreatePurchaseOrSale;

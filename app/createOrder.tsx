@@ -1,7 +1,7 @@
-import { View, ScrollView, TouchableOpacity } from "react-native";
+import { View, ScrollView } from "react-native";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,53 +21,45 @@ import * as z from "zod";
 import { useColor } from "@/hooks/useColor";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  createOrder,
-  editOrder,
-  getListOfPartners,
-  getSingleOrder,
-} from "@/service/transaction";
-import { ArrowLeft } from "lucide-react-native";
+import { getListOfItems, getListOfPartners } from "@/service/transaction";
 import CreatePartnerForm from "@/components/CreatePartnerForm";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
-import { useQuery } from "@tanstack/react-query";
+import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createOrder } from "@/service/orders";
 
 const formSchema = z.object({
-  partner: z.number({ required_error: "Type must be a number" }).optional(),
-  amount: z
-    .number({ required_error: "Type must be a number" })
-    .min(1, "Fill in a valid amount"),
-  price: z
-    .number({ required_error: "Type must be a number" })
-    .min(1, "Fill in a valid price"),
-  unpaidAmount: z.number({ required_error: "Type must be a number" }),
-  description: z.string().optional(),
+  partner: z
+    .number({ required_error: "Partner must be a number" })
+    .min(1, "Select a partner"),
+  item: z
+    .number({ required_error: "Item must be a number" })
+    .min(1, "Select an item"),
+  description: z.string().min(1, "Add some description about the order"),
+  number_of_items: z
+    .number({ required_error: "Number of items must be a number" })
+    .min(1, "Enter a valid quantity"),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-const EditOrder = () => {
+const CreateOrder = () => {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const orderId = params.id as string;
-  const isEditMode = orderId && orderId !== "new";
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const {
     control,
     handleSubmit,
-    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       partner: 0,
-      amount: 0,
-      price: 0,
-      unpaidAmount: 0,
+      item: 0,
       description: "",
+      number_of_items: 0,
     },
   });
 
@@ -78,96 +70,52 @@ const EditOrder = () => {
   const [selectedPartner, setSelectedPartner] = useState<OptionType | null>(
     null
   );
+  const [selectedItem, setSelectedItem] = useState<OptionType | null>(null);
   const [isPartnerBottomSheetVisible, setPartnerBottomSheetVisible] =
     useState(false);
+  const [isItemBottomSheetVisible, setItemBottomSheetVisible] = useState(false);
   const [partnerComboboxKey, setPartnerComboboxKey] = useState(0);
-  const [amount, setAmount] = useState(0);
-  const [price, setPrice] = useState(0);
+  const [itemComboboxKey, setItemComboboxKey] = useState(0);
 
-  // Fetch data with useQuery
+  // Fetch partners and items data
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["editOrderData", orderId],
+    queryKey: ["partnersAndItemsData"],
     queryFn: async () => {
-      const [partners, order] = await Promise.all([
-        getListOfPartners(1),
-        isEditMode
-          ? getSingleOrder(Number(orderId))
-          : Promise.resolve(null),
-      ]);
-      return { partners, order };
+      const partners = await getListOfPartners(1);
+      const items = await getListOfItems(1); // Make sure you have this function
+      return { partners, items };
     },
-    enabled: !!orderId,
   });
-
-  // Reset form when data is loaded (only in edit mode)
-  useEffect(() => {
-    if (isEditMode && data?.order) {
-      const { order } = data;
-
-      reset({
-        partner: order.partner_id || undefined,
-        amount: order.amount || 0,
-        price: order.pricePerItem || 0,
-        unpaidAmount: order.unpaidAmount || 0,
-        description: order.description || "",
-      });
-
-      if (order.partner_id) {
-        setSelectedPartner({
-          value: order.partner_id.toString(),
-          label: `${order.partnerFirstname} ${order.partnerLastname}`,
-        });
-      }
-
-      setAmount(order.amount || 0);
-      setPrice(order.pricePerItem || 0);
-    }
-  }, [isEditMode, data, reset]);
 
   const handleOpenPartnerBottomSheet = () => {
     setPartnerComboboxKey((prev) => prev + 1);
     setPartnerBottomSheetVisible(true);
   };
 
+  const handleOpenItemBottomSheet = () => {
+    setItemComboboxKey((prev) => prev + 1);
+    setItemBottomSheetVisible(true);
+  };
+
   const secondaryBg = useColor("card");
-  const lineTotal = amount && price ? (amount * price).toFixed(2) : "0.00";
 
   const onSubmit = async (formData: FormData) => {
     try {
-      if (isEditMode) {
-        await editOrder({
-          id: Number(orderId),
-          partner: formData.partner,
-          type: "order",
-          amount: formData.amount,
-          price: formData.price,
-          unpaidAmount: formData.unpaidAmount,
-          lineTotal: Number(lineTotal),
-          description: formData.description,
-        });
-      } else {
-        await createOrder({
-          partner: formData.partner,
-          type: "order",
-          amount: formData.amount,
-          price: formData.price,
-          unpaidAmount: formData.unpaidAmount,
-          lineTotal: Number(lineTotal),
-          description: formData.description,
-        });
-      }
+      await createOrder(
+        formData.item,
+        formData.partner,
+        formData.description,
+        formData.number_of_items
+      );
       toast({
-        title: isEditMode
-          ? "Order updated successfully"
-          : "Order created successfully",
+        title: "Order created successfully",
         variant: "success",
       });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       router.back();
     } catch (e) {
       toast({
-        title: isEditMode
-          ? "Failed to update order"
-          : "Failed to create order",
+        title: "Failed to create order",
         variant: "error",
       });
     }
@@ -190,7 +138,7 @@ const EditOrder = () => {
           <Spinner
             size="default"
             variant="dots"
-            label="Loading order..."
+            label="Loading partners & items..."
           />
         </View>
       </SafeAreaView>
@@ -209,7 +157,7 @@ const EditOrder = () => {
           }}
         >
           <Text style={{ color: red, marginBottom: 16 }}>
-            {error?.message ?? "Failed to load order"}
+            {error?.message ?? "Failed to load partners or items"}
           </Text>
           <Button onPress={handleGoBack}>Go Back</Button>
         </View>
@@ -229,9 +177,6 @@ const EditOrder = () => {
             paddingBottom: 0,
           }}
         >
-          <TouchableOpacity onPress={handleGoBack} style={{ marginRight: 16 }}>
-            <ArrowLeft size={24} color={textColor} />
-          </TouchableOpacity>
           <Text
             variant="title"
             style={{
@@ -240,7 +185,7 @@ const EditOrder = () => {
               color: textColor,
             }}
           >
-            {isEditMode ? "Edit Order" : "Create Order"}
+            Create Order
           </Text>
         </View>
 
@@ -260,9 +205,15 @@ const EditOrder = () => {
                   value={field.value}
                   onChangeText={field.onChange}
                   type="textarea"
+                  error={errors.description?.message}
                 />
               )}
             />
+            {/* {errors.description && (
+              <Text variant="caption" style={{ color: red }}>
+                {errors.description.message}
+              </Text>
+            )} */}
 
             <Controller
               control={control}
@@ -276,7 +227,7 @@ const EditOrder = () => {
                     field.onChange(Number(option?.value));
                   }}
                 >
-                  <ComboboxTrigger>
+                  <ComboboxTrigger error={errors.partner}>
                     <ComboboxValue placeholder="Select partner (Optional)..." />
                   </ComboboxTrigger>
                   <ComboboxContent>
@@ -300,64 +251,89 @@ const EditOrder = () => {
                 </Combobox>
               )}
             />
-            <Separator style={{ marginVertical: 15 }} />
-            
+            {errors.partner && (
+              <Text
+                variant="caption"
+                style={{
+                  color: red,
+                  fontSize: 15,
+                  marginLeft: 15,
+                  marginTop: -15,
+                }}
+              >
+                {errors.partner.message}
+              </Text>
+            )}
             <Controller
               control={control}
-              name="amount"
+              name="item"
+              render={({ field }) => (
+                <Combobox
+                  key={itemComboboxKey}
+                  value={selectedItem}
+                  onValueChange={(option) => {
+                    setSelectedItem(option);
+                    field.onChange(Number(option?.value));
+                  }}
+                >
+                  <ComboboxTrigger error={errors.item}>
+                    <ComboboxValue placeholder="Select item..." />
+                  </ComboboxTrigger>
+                  <ComboboxContent>
+                    <ComboboxInput placeholder="Search items..." />
+                    <ComboboxList>
+                      <ComboboxEmpty>
+                        <Button onPress={handleOpenItemBottomSheet}>
+                          No item found. Create new
+                        </Button>
+                      </ComboboxEmpty>
+                      {data?.items.map((item) => (
+                        <ComboboxItem key={item.id} value={item.id.toString()}>
+                          {item.item_name}
+                        </ComboboxItem>
+                      ))}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+              )}
+            />
+            {errors.item && (
+              <Text
+                variant="caption"
+                style={{
+                  color: red,
+                  fontSize: 15,
+                  marginLeft: 15,
+                  marginTop: -15,
+                }}
+              >
+                {errors.item.message}
+              </Text>
+            )}
+            <Controller
+              control={control}
+              name="number_of_items"
               render={({ field }) => (
                 <Input
-                  label="Amount"
+                  label="Quantity"
                   placeholder="Enter quantity"
                   value={field.value.toString()}
                   onChangeText={(text) => {
-                    setAmount(Number(text));
+                    text = text.trim().replace(/\D/g, "");
                     field.onChange(Number(text));
                   }}
                   keyboardType="numeric"
+                  error={errors.number_of_items?.message}
                 />
               )}
             />
-            {errors.amount && (
+            {/* {errors.number_of_items && (
               <Text variant="caption" style={{ color: red }}>
-                Amount is required
+                {errors.number_of_items.message}
               </Text>
-            )}
-            <Controller
-              control={control}
-              name="price"
-              render={({ field }) => (
-                <Input
-                  label="Price"
-                  placeholder="Enter unit price"
-                  value={field.value.toString()}
-                  onChangeText={(text) => {
-                    setPrice(Number(text));
-                    field.onChange(Number(text));
-                  }}
-                  keyboardType="numeric"
-                />
-              )}
-            />
-            {errors.price && (
-              <Text variant="caption" style={{ color: red }}>
-                Price is required
-              </Text>
-            )}
-            <Controller
-              control={control}
-              name="unpaidAmount"
-              render={({ field }) => (
-                <Input
-                  label="Unpaid Amount"
-                  placeholder="Total in ETB"
-                  value={field.value.toString()}
-                  onChangeText={(text) => field.onChange(Number(text))}
-                  keyboardType="numeric"
-                />
-              )}
-            />
+            )} */}
 
+            {/* Partner BottomSheet */}
             <BottomSheet
               isVisible={isPartnerBottomSheetVisible}
               onClose={() => setPartnerBottomSheetVisible(false)}
@@ -374,35 +350,26 @@ const EditOrder = () => {
               </View>
             </BottomSheet>
 
-            <Separator style={{ marginVertical: 15 }} />
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingVertical: 10,
-              }}
+            {/* Item BottomSheet */}
+            <BottomSheet
+              isVisible={isItemBottomSheetVisible}
+              onClose={() => setItemBottomSheetVisible(false)}
+              title=""
+              snapPoints={[0.8, 0.8]}
+              enableBackdropDismiss={false}
             >
-              <Text variant="title" style={{ fontSize: 18, color: primary }}>
-                Line Total:
-              </Text>
-              <Text
-                variant="title"
-                style={{ fontSize: 18, fontWeight: "bold", color: primary }}
-              >
-                {lineTotal} ETB
-              </Text>
-            </View>
+              <View style={{ gap: 20 }}>
+                {/* You can add your CreateItemForm here if you have one */}
+                <Text style={{ color: textColor }}>
+                  Create new item form goes here.
+                </Text>
+              </View>
+            </BottomSheet>
+
             <Separator style={{ marginVertical: 15 }} />
 
             <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
-              {isSubmitting
-                ? isEditMode
-                  ? "Updating..."
-                  : "Creating..."
-                : isEditMode
-                ? "Update Order"
-                : "Create Order"}
+              {isSubmitting ? "Creating..." : "Create Order"}
             </Button>
           </View>
         </ScrollView>
@@ -411,4 +378,4 @@ const EditOrder = () => {
   );
 };
 
-export default EditOrder;
+export default CreateOrder;

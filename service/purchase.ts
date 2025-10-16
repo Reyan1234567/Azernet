@@ -1,82 +1,69 @@
 import { supabase } from "@/lib/supabase";
 import { createInventory } from "./inventory";
-import { createBusinessCash } from "./business_cash";
+import { checkIfEnough, createBusinessCash } from "./business_cash";
 import { InventoryTypes } from "@/constants";
 import { checkItemExistence } from "./item";
 import { checkPartnerExistence } from "./partners";
-import { sell } from "./sale";
 
-export const purchase = async (
-  itemId: number,
-  partnerId: number,
-  pricePerAmount: number,
-  amount: number,
-  unpaidAmount: number
-) => {
+type purchaseInput = {
+  itemId: number;
+  partnerId: number;
+  pricePerItem: number;
+  numberOfItems: number;
+  unpaidAmount: number;
+  is_deleted:boolean
+};
+export const purchase = async ({
+  itemId,
+  partnerId,
+  pricePerItem,
+  numberOfItems,
+  unpaidAmount,
+  is_deleted
+}: purchaseInput) => {
   //Item existence check
   const item_id = await checkItemExistence(itemId);
   //Partner existence check
   await checkPartnerExistence(partnerId);
   //calculate line_total
-  const lineTotal = pricePerAmount * amount;
+  const lineTotal = pricePerItem * numberOfItems;
   //create var business_id related to the item_id
   const businessId = item_id.business_id;
   //check if there is enough cash to fund the purchase
-  const cashCheck = await supabase
-    .from("business_cash")
-    .select(`id, net:sum(amount)`)
-    .eq("business_id", businessId)
-    .single();
+  const cashCheck = await checkIfEnough(businessId);
 
-  if (cashCheck.error) {
-    throw new Error(
-      cashCheck.error.message ?? "Something when checking for cash went wrong!"
-    );
-  }
-  const cashCheckValue = Number(cashCheck.data.net);
-  if (cashCheckValue - lineTotal < 0) {
+  if (cashCheck[0].total_money - lineTotal < 0) {
     throw new Error("You don't have enough assets to fund this purchase!");
   }
   //create a purchase
   const { data, error } = await supabase
     .from("purchases")
     .insert({
-      amount: amount,
-      price_per_amount: pricePerAmount,
+      number_of_items: numberOfItems,
+      price_per_item: pricePerItem,
       unpaid_amount: unpaidAmount,
       line_total: lineTotal,
       partner_id: partnerId,
       item_id: itemId,
+      is_deleted
     })
     .select()
     .single();
 
   if (data) {
-    createInventory(amount, -1 * itemId);
-    createBusinessCash(businessId, InventoryTypes.IN, lineTotal);
+    createInventory(
+      numberOfItems,
+      itemId,
+      InventoryTypes.IN,
+      `Purchase of item ${itemId}`
+    );
+    createBusinessCash(
+      businessId,
+      InventoryTypes.OUT,
+      `Purchase from partner with id: ${partnerId}`,
+      -1*lineTotal
+    );
     return data;
   }
-  throw new Error(error.message ?? "Something went wrong");
-};
-
-export const reversePurchase = async (id: number) => {
-  const { data, error } = await supabase
-    .from("purchase")
-    .select("*")
-    .eq("id", id)
-    .single();
-  if (error) {
-    throw new Error(
-      error.message ??
-        "Something went wrong when trying to check purchase existence"
-    );
-  }
-
-  await sell(
-    data.item_id,
-    data.partner_id,
-    data.price_per_amount,
-    data.amount,
-    data.unpaid_amount
-  );
+  throw new Error(error?.message ?? "Something went wrong");
 };

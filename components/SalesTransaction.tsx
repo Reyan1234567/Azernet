@@ -1,7 +1,7 @@
 import { FlatList, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useState } from "react";
-import { useQuery /*useQueryClient */ } from "@tanstack/react-query";
+import { useQuery, useQueryClient  } from "@tanstack/react-query";
 import { getAllSalesTransactions } from "@/service/transaction";
 import { SearchBar } from "./ui/searchbar";
 import { Button } from "./ui/button";
@@ -12,10 +12,11 @@ import { router } from "expo-router";
 import { Spinner } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
+import { reverseSale } from "@/service/reversals";
 
 const SalesTransaction = () => {
   const { toast } = useToast();
-  // const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const primaryColor = useColor("primary");
   const red = useColor("red");
   const [search, setSearch] = useState("");
@@ -29,22 +30,22 @@ const SalesTransaction = () => {
     queryFn: () => getAllSalesTransactions(1, search, filter),
   });
 
-  // const handleDeleteTransaction = async (transactionId: number) => {
-  //   try {
-  //     await deleteSalesTransaction(transactionId);
-  //     queryClient.invalidateQueries({ queryKey: ["salesTransactions"] });
-  //     toast({
-  //       title: "Sale deleted successfully",
-  //       variant: "success",
-  //     });
-  //   } catch (error: any) {
-  //     toast({
-  //       title: "Failed to delete sale",
-  //       description: error.message ?? "Something went wrong",
-  //       variant: "error",
-  //     });
-  //   }
-  // };
+  const handleReverseTransaction = async (transactionId: number) => {
+    try {
+      await reverseSale(transactionId);
+      queryClient.invalidateQueries({ queryKey: ["salesTransactions"] });
+      toast({
+        title: "Sale reversed successfully",
+        variant: "success",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to reverse sale",
+        description: error.message ?? "Something went wrong",
+        variant: "error",
+      });
+    }
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -134,7 +135,7 @@ const SalesTransaction = () => {
                 borderRadius: 28,
                 backgroundColor: primaryColor,
               }}
-              onPress={() => router.push("/editItemTransaction/new?type=Sale")}
+              onPress={() => router.push("/createPurchaseOrSale?type=sale")}
             />
           </View>
         </View>
@@ -142,26 +143,23 @@ const SalesTransaction = () => {
         <View style={{ flex: 1 }}>
           <FlatList
             data={data}
-            keyExtractor={(item) => item.transaction_id.toString()}
+            keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
             renderItem={({ item }) => (
               <SalesCard
-                handleDelete={() => {
+                handleReverse={() => {
                   toast({
-                    title: `Are you sure you want to delete this sale?`,
+                    title: `Are you sure you want to reverse this sale?`,
                     duration: 10000,
-                    description: `${item.item_name} sale will be marked as deleted`,
+                    description: `${item.item_name} sale will be marked as reversed`,
                     variant: "warning",
                     action: {
-                      label: "Delete",
+                      label: "Reverse",
                       onPress: () => {
-                        // handleDeleteTransaction(item.transaction_id);
+                        handleReverseTransaction(item.id);
                       },
                     },
                   });
-                }}
-                handleEdit={() => {
-                  router.push(`/editItemTransaction/${item.transaction_id}`);
                 }}
                 transaction={item}
               />
@@ -185,7 +183,7 @@ const SalesTransaction = () => {
                 borderRadius: 28,
                 backgroundColor: primaryColor,
               }}
-              onPress={() => router.push("/editItemTransaction/new?type=Sale")}
+              onPress={() => router.push("/createPurchaseOrSale?type=sale")}
             />
           </View>
         </View>

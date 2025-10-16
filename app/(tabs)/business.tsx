@@ -115,126 +115,134 @@ const Business = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
       <TopBar />
-      <Text variant="title" style={{ color: textColor, padding: 20 }}>
-        Business Related Action
-      </Text>
-      <Separator style={{width:"90%", marginHorizontal:20}}/>
-      <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
-        <FundBusiness />
-      </View>
-      <Text variant="title" style={{ color: textColor, padding: 20 }}>
-        Business Related Info
-      </Text>
-      <Separator style={{width:"90%", marginHorizontal:20}}/>
-      <View style={{ gap: 16, padding: 20 }}>
-        {/* Partners Navigation Card */}
-        <TouchableOpacity onPress={handleNavigateToPartners}>
-          <Card style={{ padding: 20 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
+      <ScrollView>
+        <Text variant="title" style={{ color: textColor, padding: 20 }}>
+          Business Related Action
+        </Text>
+        <Separator style={{ width: "90%", marginHorizontal: 20 }} />
+        <View style={{ paddingHorizontal: 20, paddingVertical: 12 }}>
+          <FundBusiness />
+        </View>
+        <Text variant="title" style={{ color: textColor, padding: 20 }}>
+          Business Related Info
+        </Text>
+        <Separator style={{ width: "90%", marginHorizontal: 20 }} />
+        <View style={{ gap: 16, padding: 20 }}>
+          <TouchableOpacity onPress={handleNavigateToPartners}>
+            <Card style={{ padding: 20 }}>
               <View
-                style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
               >
                 <View
                   style={{
-                    backgroundColor: primaryColor + "20",
-                    padding: 12,
-                    borderRadius: 12,
-                    marginRight: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    flex: 1,
                   }}
                 >
-                  <Users size={24} color={primaryColor} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    variant="title"
+                  <View
                     style={{
-                      fontSize: 18,
-                      fontWeight: "bold",
-                      marginBottom: 4,
-                      color: textColor,
+                      backgroundColor: primaryColor + "20",
+                      padding: 12,
+                      borderRadius: 12,
+                      marginRight: 16,
                     }}
                   >
-                    Partners
-                  </Text>
-                  <Text variant="body" style={{ color: mutedColor }}>
-                    Manage your suppliers and customers
-                  </Text>
-                  <Text
-                    variant="caption"
-                    style={{ color: mutedColor, marginTop: 4 }}
-                  >
-                    {partners.length} partners registered
-                  </Text>
+                    <Users size={24} color={primaryColor} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      variant="title"
+                      style={{
+                        fontSize: 18,
+                        fontWeight: "bold",
+                        marginBottom: 4,
+                        color: textColor,
+                      }}
+                    >
+                      Partners
+                    </Text>
+                    <Text variant="body" style={{ color: mutedColor }}>
+                      Manage your suppliers and customers
+                    </Text>
+                    <Text
+                      variant="caption"
+                      style={{ color: mutedColor, marginTop: 4 }}
+                    >
+                      {partners.length} partners registered
+                    </Text>
+                  </View>
                 </View>
+
+                <Text variant="caption" style={{ color: mutedColor }}>
+                  <ChevronRight />
+                </Text>
               </View>
+            </Card>
+          </TouchableOpacity>
 
-              <Text variant="caption" style={{ color: mutedColor }}>
-                <ChevronRight />
-              </Text>
-            </View>
-          </Card>
-        </TouchableOpacity>
-
-        {/* Items Navigation Card */}
-        <TouchableOpacity onPress={handleNavigateToItems}>
-          <Card style={{ padding: 20 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
+          <TouchableOpacity onPress={handleNavigateToItems}>
+            <Card style={{ padding: 20 }}>
               <View
-                style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
               >
                 <View
                   style={{
-                    backgroundColor: primaryColor + "20",
-                    padding: 12,
-                    borderRadius: 12,
-                    marginRight: 16,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    flex: 1,
                   }}
                 >
-                  <Package size={24} color={primaryColor} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    variant="title"
+                  <View
                     style={{
-                      fontSize: 18,
-                      fontWeight: "bold",
-                      marginBottom: 4,
-                      color: textColor,
+                      backgroundColor: primaryColor + "20",
+                      padding: 12,
+                      borderRadius: 12,
+                      marginRight: 16,
                     }}
                   >
-                    Items
-                  </Text>
-                  <Text variant="body" style={{ color: mutedColor }}>
-                    Manage your products and inventory
-                  </Text>
-                  <Text
-                    variant="caption"
-                    style={{ color: mutedColor, marginTop: 4 }}
-                  >
-                    {items.length} items in catalog
-                  </Text>
+                    <Package size={24} color={primaryColor} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      variant="title"
+                      style={{
+                        fontSize: 18,
+                        fontWeight: "bold",
+                        marginBottom: 4,
+                        color: textColor,
+                      }}
+                    >
+                      Items
+                    </Text>
+                    <Text variant="body" style={{ color: mutedColor }}>
+                      Manage your products and inventory
+                    </Text>
+                    <Text
+                      variant="caption"
+                      style={{ color: mutedColor, marginTop: 4 }}
+                    >
+                      {items.length} items in catalog
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <Text variant="caption" style={{ color: mutedColor }}>
-                <ChevronRight />
-              </Text>
-            </View>
-          </Card>
-        </TouchableOpacity>
-      </View>
+                <Text variant="caption" style={{ color: mutedColor }}>
+                  <ChevronRight />
+                </Text>
+              </View>
+            </Card>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };

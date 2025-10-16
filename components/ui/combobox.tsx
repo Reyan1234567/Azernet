@@ -168,8 +168,13 @@ export function ComboboxTrigger({
 
   const handlePress = () => {
     if (disabled) return;
+
+    // Measure first, then open
     measureTrigger();
-    setIsOpen(true);
+    // Small delay to ensure measurement completes before opening
+    setTimeout(() => {
+      setIsOpen(true);
+    }, 10);
   };
 
   return (

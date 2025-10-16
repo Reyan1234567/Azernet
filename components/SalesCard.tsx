@@ -7,24 +7,14 @@ import { View } from "@/components/ui/view";
 import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { useColor } from "@/hooks/useColor";
-import {
-  User,
-  Edit,
-  Trash2,
-  TrendingUp,
-} from "lucide-react-native";
+import { User, TrendingUp, Recycle } from "lucide-react-native";
 
 interface SalesCardProps {
   transaction: ItemTransactionDisplay;
-  handleEdit: () => void;
-  handleDelete: () => void;
+  handleReverse: () => void;
 }
 
-const SalesCard = ({
-  transaction,
-  handleDelete,
-  handleEdit,
-}: SalesCardProps) => {
+const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
   const successColor = useColor("green");
   const textColor = useColor("text");
   const mutedColor = useColor("textMuted");
@@ -41,11 +31,7 @@ const SalesCard = ({
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Icon
-            name={TrendingUp}
-            size={16}
-            color={successColor}
-          />
+          <Icon name={TrendingUp} size={16} color={successColor} />
           <Text
             variant="caption"
             style={{
@@ -119,10 +105,7 @@ const SalesCard = ({
           <Text
             variant="body"
             style={{
-              color:
-                transaction.unpaid_amount > 0
-                  ? successColor
-                  : mutedColor,
+              color: transaction.unpaid_amount > 0 ? successColor : mutedColor,
               fontWeight: "600",
             }}
           >
@@ -156,21 +139,11 @@ const SalesCard = ({
         <Button
           variant="outline"
           size="sm"
-          icon={Edit}
+          icon={Recycle}
           style={{ flex: 1 }}
-          onPress={handleEdit}
+          onPress={handleReverse}
         >
-          Edit
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          icon={Trash2}
-          style={{ flex: 1 }}
-          onPress={handleDelete}
-        >
-          Delete
+          Reverse
         </Button>
       </View>
     </Card>
@@ -178,4 +151,3 @@ const SalesCard = ({
 };
 
 export default SalesCard;
-

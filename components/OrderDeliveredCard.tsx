@@ -7,29 +7,20 @@ import { View } from "@/components/ui/view";
 import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { useColor } from "@/hooks/useColor";
-import {
-  User,
-  Edit,
-  Trash2,
-  ShoppingCart,
-} from "lucide-react-native";
+import { User, Undo2, CheckCircle } from "lucide-react-native";
 
 interface OrderCardProps {
   order: OrderTransactionDisplay;
-  handleEdit: () => void;
-  handleDelete: () => void;
+  handleReverseToPurchased: () => void;
 }
 
-const OrderCard = ({
+const OrderDeliveredCard = ({
   order,
-  handleDelete,
-  handleEdit,
+  handleReverseToPurchased,
 }: OrderCardProps) => {
   const successColor = useColor("green");
   const textColor = useColor("text");
-  const destructiveColor = useColor("red");
   const mutedColor = useColor("textMuted");
-  const primaryColor = useColor("primary");
 
   return (
     <Card style={{ marginVertical: 8 }}>
@@ -43,38 +34,36 @@ const OrderCard = ({
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Icon
-            name={ShoppingCart}
-            size={16}
-            color={primaryColor}
-          />
+          <Icon name={CheckCircle} size={16} color={successColor} />
           <Text
             variant="caption"
             style={{
-              color: primaryColor,
+              color: successColor,
               fontWeight: "600",
             }}
           >
-            ORDER
+            DELIVERED
           </Text>
         </View>
         <Text variant="caption" style={{ color: mutedColor }}>
-          {order.created_at ? new Date(order.created_at).toLocaleDateString() : "No date"}
+          {order.created_at
+            ? new Date(order.created_at).toLocaleDateString()
+            : "No date"}
         </Text>
       </View>
 
       {/* Main Content */}
       <View style={{ marginBottom: 12 }}>
         <Text variant="title" style={{ marginBottom: 4, color: textColor }}>
-          {order.description || "Order"} × {order.amount || 0}
+          {order.item_name || "Order"} × {order.number_of_items || 0}
         </Text>
         <Text variant="body" style={{ color: mutedColor }}>
           {order.description || "No description"}
         </Text>
       </View>
 
-      {/* Partner Info - Currently not available in database schema */}
-      {order.partners && order.partners.first_name && order.partners.last_name && (
+      {/* Consumer Info */}
+      {(order.consumer_first_name || order.consumer_last_name) && (
         <View
           style={{
             flexDirection: "row",
@@ -85,19 +74,21 @@ const OrderCard = ({
         >
           <Icon name={User} size={16} color={mutedColor} />
           <Text variant="caption" style={{ color: mutedColor }}>
-            {`${order.partners.first_name} ${order.partners.last_name}`}
+            {`${order.consumer_first_name || ""} ${
+              order.consumer_last_name || ""
+            }`.trim()}
           </Text>
         </View>
       )}
 
       <Separator style={{ marginVertical: 12 }} />
 
-      {/* Financial Details */}
+      {/* Status & Info Section */}
       <View
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
-          alignItems: "flex-start",
+          alignItems: "center",
           marginBottom: 16,
         }}
       >
@@ -106,10 +97,16 @@ const OrderCard = ({
             variant="caption"
             style={{ color: mutedColor, marginBottom: 2 }}
           >
-            Total Price
+            Current Status
           </Text>
-          <Text variant="subtitle" style={{ color: textColor }}>
-            ${(order.line_total || 0).toFixed(2)}
+          <Text
+            variant="subtitle"
+            style={{
+              color: successColor,
+              fontWeight: "600",
+            }}
+          >
+            DELIVERED
           </Text>
         </View>
 
@@ -118,67 +115,70 @@ const OrderCard = ({
             variant="caption"
             style={{ color: mutedColor, marginBottom: 2 }}
           >
-            Unpaid Amount
+            Items
           </Text>
-          <Text
-            variant="body"
-            style={{
-              color:
-                (order.unpaid_amount || 0) > 0
-                  ? destructiveColor
-                  : successColor,
-              fontWeight: "600",
-            }}
-          >
-            ${(order.unpaid_amount || 0).toFixed(2)}
-          </Text>
-          {(order.unpaid_amount || 0) > 0 && (
-            <Text
-              variant="caption"
-              style={{ color: destructiveColor, fontSize: 10 }}
-            >
-              UNPAID
-            </Text>
-          )}
-        </View>
-
-        <View style={{ alignItems: "flex-end" }}>
-          <Text
-            variant="caption"
-            style={{ color: mutedColor, marginBottom: 2 }}
-          >
-            Quantity
-          </Text>
-          <Text variant="body" style={{ color: mutedColor }}>
-            {order.amount || 0} units
+          <Text variant="body" style={{ color: textColor }}>
+            {order.number_of_items || 0}
           </Text>
         </View>
       </View>
 
-      {/* Action Buttons */}
+      {/* Completion Message */}
+      <View
+        style={{
+          backgroundColor: `${successColor}15`,
+          padding: 12,
+          borderRadius: 8,
+          marginBottom: 16,
+          borderLeftWidth: 3,
+          borderLeftColor: successColor,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 4,
+          }}
+        >
+          <Icon name={CheckCircle} size={16} color={successColor} />
+          <Text
+            variant="caption"
+            style={{ color: successColor, fontWeight: "600" }}
+          >
+            Order Completed
+          </Text>
+        </View>
+        <Text variant="caption" style={{ color: mutedColor }}>
+          This order has been successfully delivered to the customer.
+        </Text>
+      </View>
+
+      {/* Action Button - Only Reverse */}
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Button
           variant="outline"
           size="sm"
-          icon={Edit}
+          icon={Undo2}
           style={{ flex: 1 }}
-          onPress={handleEdit}
+          onPress={handleReverseToPurchased}
         >
-          Edit
+          Reverse to Purchased
         </Button>
+      </View>
 
-        <Button
-          variant="outline"
-          size="sm"
-          icon={Trash2}
-          style={{ flex: 1 }}
-          onPress={handleDelete}
+      {/* Warning for Reverse Action */}
+      <View style={{ marginTop: 8 }}>
+        <Text
+          variant="caption"
+          style={{ color: mutedColor, textAlign: "center", fontSize: 10 }}
         >
-          Delete
-        </Button>
+          Reverse will move this order back to purchased state
+        </Text>
       </View>
     </Card>
   );
 };
 
-export default OrderCard;
+export default OrderDeliveredCard;

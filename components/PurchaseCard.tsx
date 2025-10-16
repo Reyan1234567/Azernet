@@ -7,23 +7,16 @@ import { View } from "@/components/ui/view";
 import { Icon } from "@/components/ui/icon";
 import { Separator } from "@/components/ui/separator";
 import { useColor } from "@/hooks/useColor";
-import {
-  User,
-  Edit,
-  Trash2,
-  TrendingDown,
-} from "lucide-react-native";
+import { User, TrendingDown, Recycle } from "lucide-react-native";
 
 interface PurchaseCardProps {
   transaction: ItemTransactionDisplay;
-  handleEdit: () => void;
-  handleDelete: () => void;
+  handleReverse: () => void;
 }
 
 const PurchaseCard = ({
   transaction,
-  handleDelete,
-  handleEdit,
+  handleReverse,
 }: PurchaseCardProps) => {
   const destructiveColor = useColor("red");
   const textColor = useColor("text");
@@ -41,11 +34,7 @@ const PurchaseCard = ({
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Icon
-            name={TrendingDown}
-            size={16}
-            color={destructiveColor}
-          />
+          <Icon name={TrendingDown} size={16} color={destructiveColor} />
           <Text
             variant="caption"
             style={{
@@ -120,9 +109,7 @@ const PurchaseCard = ({
             variant="body"
             style={{
               color:
-                transaction.unpaid_amount > 0
-                  ? destructiveColor
-                  : mutedColor,
+                transaction.unpaid_amount > 0 ? destructiveColor : mutedColor,
               fontWeight: "600",
             }}
           >
@@ -156,21 +143,11 @@ const PurchaseCard = ({
         <Button
           variant="outline"
           size="sm"
-          icon={Edit}
+          icon={Recycle}
           style={{ flex: 1 }}
-          onPress={handleEdit}
+          onPress={handleReverse}
         >
-          Edit
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          icon={Trash2}
-          style={{ flex: 1 }}
-          onPress={handleDelete}
-        >
-          Delete
+          Reverse
         </Button>
       </View>
     </Card>
@@ -178,4 +155,3 @@ const PurchaseCard = ({
 };
 
 export default PurchaseCard;
-

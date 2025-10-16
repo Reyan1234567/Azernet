@@ -40,15 +40,6 @@ export default function RootLayout() {
                 }}
               />
               <Stack.Screen
-                name="categories"
-                options={{
-                  headerTitle: "",
-                  headerStyle: {
-                    backgroundColor: "transparent",
-                  },
-                }}
-              />
-              <Stack.Screen
                 name="editPartner/[id]"
                 options={{ headerTitle: "", headerShown: false }}
               />
@@ -56,14 +47,18 @@ export default function RootLayout() {
                 name="editItem/[id]"
                 options={{ headerTitle: "", headerShown: false }}
               />
+              <Stack.Screen name="fund" options={{ headerTitle: "" }} />
               <Stack.Screen
-                name="editCategory/[id]"
-                options={{ headerTitle: "", headerShown: false }}
+                name="createPurchaseOrSale"
+                options={{ headerTitle: "" }}
               />
               <Stack.Screen
-                name="editItemTransaction/[id]"
-                options={{ headerTitle: "", headerShown: false }}
+                name="createOrder"
+                options={{ headerTitle: "" }}
               />
+              <Stack.Screen name="withdraw" options={{ headerTitle: "" }} />
+              <Stack.Screen name="purchaseOrder/[id]" options={{ headerTitle: "" }} />
+
               <Stack.Screen name="+not-found" />
             </Stack>
             <StatusBar style="auto" />

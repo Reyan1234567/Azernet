@@ -11,6 +11,17 @@ export type ItemTransactionDisplay = {
   partner_last_name: string;
   item_name: string;
 };
+export type TransactionDisplay = {
+  id: number;
+  amount: number;
+  price_per_amount: number;
+  unpaid_amount: number;
+  created_at: string;
+  line_total: number;
+  first_name: string;
+  last_name: string;
+  item_name: string;
+};
 
 export type CategoryTransactionDisplay = {
   transaction_id: number;
@@ -27,7 +38,7 @@ export type CategoryTransactionDisplay = {
 
 export type ItemTransactionInput = {
   id?: number;
-  amount: number;
+  numberOfItems: number;
   item: number;
   partner: number;
   price: number;
@@ -224,7 +235,7 @@ export const createItemTransaction = async (
   const { data, error } = await supabase
     .from("transactions")
     .insert({
-      amount: transaction.amount,
+      amount: transaction.numberOfItems,
       price_per_amount: transaction.price,
       unpaid_amount: transaction.unpaidAmount,
       status: transaction.type,
@@ -441,116 +452,108 @@ export const getListOfCategories = async (business_id: number) => {
   throw new Error(error.message ?? "Something went wrong");
 };
 
-// Orders (transactions without item/category)
-export type OrderTransactionDisplay = {
-  id: number;
-  amount: number | null;
-  price_per_amount: number | null;
-  unpaid_amount: number | null;
-  status: string | null;
-  created_at: string | null;
-  line_total: number | null;
-  description?: string | null;
-  partners?: {
-    first_name: string | null;
-    last_name: string | null;
-  } | null;
-};
+// // Orders (transactions without item/category)
+// export type OrderTransactionDisplay = {
+//   id: number;
+//   item_name:string;
+//   consumer_first_name: string;
+//   consumer_last_name: string;
+//   description?: string | null;
+//   status: string;
+//   created_at: string;
+//   number_of_items: number;
+//   purchase_id: number | null;
+//   sale_id: number | null;
+// };
 
-export type OrderTransactionInput = {
-  id?: number;
-  amount: number;
-  partner?: number;
-  price: number;
-  type: string;
-  unpaidAmount: number;
-  lineTotal: number;
-  description?: string;
-};
+// export type OrderTransactionInput = {
+//   number_of_items: number;
+//   partner?: number;
+//   item: number;
+//   description?: string;
+// };
 
-export const getAllOrders = async (
-  business_id_args: number,
-  search: string,
-  filter: string
-) => {
-  let { data, error } = await supabase.rpc("getallorders", {
-    business_id_args,
-    filter,
-    search,
-  });
-  if (error) {
-    throw new Error(
-      error.message ?? "Something went wrong when getting All orders"
-    );
-  } else return data;
-};
+// export const getAllOrders = async (
+//   business_id_args: number,
+//   search: string,
+//   filter: string
+// ) => {
+//   let { data, error } = await supabase.rpc("getallorders", {
+//     business_id_args,
+//     filter,
+//     search,
+//   });
+//   if (error) {
+//     throw new Error(
+//       error.message ?? "Something went wrong when getting All orders"
+//     );
+//   } else return data;
+// };
 
-export const getSingleOrder = async (id: number) => {
-  const { data, error } = await supabase
-    .from("transactions")
-    .select(`*`)
-    .eq("id", id)
-    .eq("is_deleted", false)
-    .eq("status", "order")
-    .single();
+// export const getSingleOrder = async (id: number) => {
+//   const { data, error } = await supabase
+//     .from("transactions")
+//     .select(`*`)
+//     .eq("id", id)
+//     .eq("is_deleted", false)
+//     .eq("status", "order")
+//     .single();
 
-  if (data) {
-    return {
-      partner_id: null, // No partner_id in current schema
-      partnerFirstname: "",
-      partnerLastname: "",
-      amount: data.amount,
-      pricePerItem: data.price_per_amount,
-      unpaidAmount: data.unpaid_amount,
-      lineTotal: data.line_total,
-      description: data.measure || "", // Using measure as description
-    };
-  }
-  throw new Error(error?.message ?? "Something went wrong");
-};
+//   if (data) {
+//     return {
+//       partner_id: null, // No partner_id in current schema
+//       partnerFirstname: "",
+//       partnerLastname: "",
+//       amount: data.amount,
+//       pricePerItem: data.price_per_amount,
+//       unpaidAmount: data.unpaid_amount,
+//       lineTotal: data.line_total,
+//       description: data.measure || "", // Using measure as description
+//     };
+//   }
+//   throw new Error(error?.message ?? "Something went wrong");
+// };
 
-export const createOrder = async (order: OrderTransactionInput) => {
-  const { data, error } = await supabase
-    .from("transactions")
-    .insert({
-      amount: order.amount,
-      price_per_amount: order.price,
-      unpaid_amount: order.unpaidAmount,
-      status: "order",
-      line_total: order.lineTotal,
-      measure: order.description || "", // Using measure field for description
-      is_deleted: false,
-    })
-    .select()
-    .single();
+// export const createOrder = async (order: OrderTransactionInput) => {
+//   const { data, error } = await supabase
+//     .from("orders")
+//     .insert({
+//       item_id: order.item,
+//       consumer_id: order.partner,
+//       description: order.description,
+//       number_of_items: order.number_of_items,
+//       is_deleted: false,
+//     })
+//     .select()
+//     .single();
 
-  if (data) {
-    return "Order created successfully";
-  }
+//   if (data) {
+//     return "Order created successfully";
+//   }
 
-  throw new Error(error?.message ?? "Something went wrong");
-};
+//   throw new Error(error?.message ?? "Something went wrong");
+// };
 
-export const editOrder = async (order: OrderTransactionInput) => {
-  const { data, error } = await supabase
-    .from("transactions")
-    .update({
-      amount: order.amount,
-      price_per_amount: order.price,
-      unpaid_amount: order.unpaidAmount,
-      line_total: order.lineTotal,
-      measure: order.description || "", // Using measure field for description
-    })
-    .eq("id", order.id);
+// export const editOrder = async (order: OrderTransactionInput) => {
+//   const { data, error } = await supabase
+//     .from("transactions")
+//     .update({
+//       amount: order.amount,
+//       price_per_amount: order.price,
+//       unpaid_amount: order.unpaidAmount,
+//       line_total: order.lineTotal,
+//       measure: order.description || "", // Using measure field for description
+//     })
+//     .eq("id", order.id);
 
-  if (error) {
-    throw new Error(error?.message ?? "Something went wrong");
-  }
-};
+//   if (error) {
+//     throw new Error(error?.message ?? "Something went wrong");
+//   }
+// };
 
-export const deleteOrder = async (id: number) => {
-  return deleteTransaction(id);
-};
+// export const deleteOrder = async (id: number) => {
+//   return deleteTransaction(id);
+// };
 
 // Purchase-specific functions
 export const getAllPurchaseTransactions = async (
@@ -568,5 +571,15 @@ export const getAllSalesTransactions = async (
   filter: string
 ) => {
   // Use the corrected getAllItemTransactions function with Sale filter
-  return getAllItemTransactions(business_id_arg, search, filter);
+
+  let { data, error } = await supabase.rpc("getallsales", {
+    business_id_arg,
+    filter,
+    search,
+  });
+  if (error) {
+    throw new Error(
+      error.message ?? "Something went wrong when retreiving all sales"
+    );
+  } else return data;
 };
