@@ -123,8 +123,8 @@ const PurchaseTransaction = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 24,
-              right: 24,
+              bottom: 7,
+              right: 7,
               zIndex: 1000,
             }}
           >
@@ -171,8 +171,8 @@ const PurchaseTransaction = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 24,
-              right: 24,
+              bottom: 7,
+              right: 7,
               zIndex: 1000,
             }}
           >

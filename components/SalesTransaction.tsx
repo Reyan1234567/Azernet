@@ -1,7 +1,7 @@
 import { FlatList, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useState } from "react";
-import { useQuery, useQueryClient  } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAllSalesTransactions } from "@/service/transaction";
 import { SearchBar } from "./ui/searchbar";
 import { Button } from "./ui/button";
@@ -120,8 +120,8 @@ const SalesTransaction = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 24,
-              right: 24,
+              bottom: 7,
+              right: 7,
               zIndex: 1000,
             }}
           >
@@ -168,8 +168,8 @@ const SalesTransaction = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 24,
-              right: 24,
+              bottom: 7,
+              right: 7,
               zIndex: 1000,
             }}
           >

@@ -73,15 +73,35 @@ export const changeStatus = async (
           "Something went wrong when nullifying purchase_id"
       );
     }
+    await changeOrderStatus(ORDERSTATUS.PENDING, id);
     return pending.data;
   }
-  if (status === "purchased") {
+  if (status === ORDERSTATUS.PURCHASED) {
     if (order.data.status === ORDERSTATUS.PURCHASED) {
       throw new Error(
         "Can only change to status:- purchas from a status:- pending or delivered"
       );
     }
     if (order.data.status === ORDERSTATUS.PENDING) {
+      const purchaseValue = await purchase({
+        itemId: order.data.item_id,
+        partnerId: partner!,
+        pricePerItem: pricePerAmount!,
+        numberOfItems: order.data.number_of_items,
+        unpaidAmount: unpaidAmount!,
+        is_deleted: false,
+      });
+      const ppid = await supabase
+        .from("orders")
+        .update({ purchase_id: purchaseValue.id })
+        .eq("id", id);
+
+      if (ppid.error) {
+        throw new Error(
+          ppid.error.message ??
+            "Something went wrong when updating the purchasId"
+        );
+      }
       const pendingToPurchased = await changeOrderStatus(
         ORDERSTATUS.PURCHASED,
         id
@@ -92,46 +112,7 @@ export const changeStatus = async (
             "Something went wrong when changing status from pending to purchased!"
         );
       }
-
-      // const purchasedToPending = await changeOrderStatus(
-      //   ORDERSTATUS.PENDING,
-      //   id
-      // );
-      // if (purchasedToPending.error) {
-      //   throw new Error(
-      //     purchasedToPending.error?.message ??
-      //       "Something went wrong when changing status from pending to purchased!"
-      //   );
-      // }
-      const purchaseValue = await purchase({
-        itemId: order.data.item_id,
-        partnerId: partner!,
-        pricePerItem: pricePerAmount!,
-        numberOfItems: order.data.amount,
-        unpaidAmount: unpaidAmount!,
-        is_deleted: false,
-      });
-      const ppid = await supabase
-        .from("orders")
-        .update({ purchase_id: purchaseValue.id })
-        .eq("id", id);
-      if (ppid.error) {
-        throw new Error(
-          ppid.error.message ??
-            "Something went wrong when updating the purchasId"
-        );
-      }
     } else {
-      const deliveredToPurchased = await changeOrderStatus(
-        ORDERSTATUS.PURCHASED,
-        id
-      );
-      if (deliveredToPurchased.error) {
-        throw new Error(
-          deliveredToPurchased.error?.message ??
-            "Something went wrong when changing status from delivered to purchased!"
-        );
-      }
       await reverseSale(order.data.sale_id);
       const ppid = await supabase
         .from("orders")
@@ -142,6 +123,16 @@ export const changeStatus = async (
           ppid.error.message ?? "Something went wrong when updating the saleId"
         );
       }
+      const deliveredToPurchased = await changeOrderStatus(
+        ORDERSTATUS.PURCHASED,
+        id
+      );
+      if (deliveredToPurchased.error) {
+        throw new Error(
+          deliveredToPurchased.error?.message ??
+            "Something went wrong when changing status from delivered to purchased!"
+        );
+      }
     }
   }
   if (status === "delivered") {
@@ -150,18 +141,11 @@ export const changeStatus = async (
         "Can only change to status:- delivered from a status:- purchased"
       );
     }
-    const delivered = await changeOrderStatus(ORDERSTATUS.DELIVERED, id);
-    if (delivered.error) {
-      throw new Error(
-        delivered.error?.message ??
-          "Something went wrong when changing order status to delivered"
-      );
-    }
     const saleValue = await sell(
       order.data.item_id,
       order.data.consumer_id,
       pricePerAmount!,
-      order.data.amount,
+      order.data.number_of_items,
       unpaidAmount!,
       false
     );
@@ -173,6 +157,13 @@ export const changeStatus = async (
       throw new Error(
         saleIdUpdate.error.message ??
           "Something went wrong when updating the saleId"
+      );
+    }
+    const delivered = await changeOrderStatus(ORDERSTATUS.DELIVERED, id);
+    if (delivered.error) {
+      throw new Error(
+        delivered.error?.message ??
+          "Something went wrong when changing order status to delivered"
       );
     }
     return delivered.data;
@@ -301,7 +292,7 @@ export const deleteOrder = async (id: number) => {
 //         order.data.item_id,
 //         partner,
 //         pricePerAmount,
-//         order.data.amount,
+//         order.data.number_of_items,
 //         unpaidAmount
 //       );
 //       const ppid = await supabase
@@ -346,7 +337,7 @@ export const deleteOrder = async (id: number) => {
 //       order.data.item_id,
 //       order.data.consumer_id,
 //       pricePerAmount,
-//       order.data.amount,
+//       order.data.number_of_items,
 //       unpaidAmount
 //     );
 //     const saleIdUpdate = await supabase

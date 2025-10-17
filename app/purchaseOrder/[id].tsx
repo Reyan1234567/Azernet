@@ -7,7 +7,7 @@ const PurchaseOrder = () => {
   const modalId = useLocalSearchParams().id as string;
 
   return (
-    <View>
+    <View style={{flex:1}}>
       <PurchaseFormComponent id={Number(modalId)} />
     </View>
   );

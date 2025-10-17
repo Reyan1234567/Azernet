@@ -453,18 +453,18 @@ export const getListOfCategories = async (business_id: number) => {
 };
 
 // // Orders (transactions without item/category)
-// export type OrderTransactionDisplay = {
-//   id: number;
-//   item_name:string;
-//   consumer_first_name: string;
-//   consumer_last_name: string;
-//   description?: string | null;
-//   status: string;
-//   created_at: string;
-//   number_of_items: number;
-//   purchase_id: number | null;
-//   sale_id: number | null;
-// };
+export type OrderTransactionDisplay = {
+  id: number;
+  item_name:string;
+  consumer_first_name: string;
+  consumer_last_name: string;
+  description?: string | null;
+  status: string;
+  created_at: string;
+  number_of_items: number;
+  purchase_id: number | null;
+  sale_id: number | null;
+};
 
 // export type OrderTransactionInput = {
 //   number_of_items: number;

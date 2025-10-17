@@ -1,4 +1,4 @@
-import { FlatList, View, StyleSheet } from "react-native";
+import { FlatList, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +12,12 @@ import { router } from "expo-router";
 import { Spinner } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
-import { changeOrderStatus, deleteOrder, getAllOrders } from "@/service/orders";
+import {
+  changeOrderStatus,
+  changeStatus,
+  deleteOrder,
+  getAllOrders,
+} from "@/service/orders";
 import OrderPendingCard from "./OrderPendingCard";
 import OrderPurchasedCard from "./OrderPurchasedCard";
 import OrderDeliveredCard from "./OrderDeliveredCard";
@@ -22,10 +27,42 @@ import { reverseSale } from "@/service/reversals";
 const OrdersComponent = () => {
   const { toast } = useToast();
   const dialog = useAlertDialog();
+  const reverseToPending = useAlertDialog();
+  const reverseToPurchased = useAlertDialog();
   const queryClient = useQueryClient();
   const primaryColor = useColor("primary");
   const red = useColor("red");
 
+  const handlePurchasedReversal = async () => {
+    try {
+      await changeStatus(ORDERSTATUS.PENDING, modalId);
+      toast({
+        title: "Purchase reversal successful",
+        variant: "success",
+      });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    } catch (e) {
+      toast({
+        title: "Failed to reverse purchase",
+        variant: "error",
+      });
+    }
+  };
+  const handleDeliveredReversal = async () => {
+    try {
+      await changeStatus(ORDERSTATUS.PURCHASED, modalId);
+      toast({
+        title: "Delivered reversal successful",
+        variant: "success",
+      });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    } catch (e) {
+      toast({
+        title: "Failed to reverse delivered status",
+        variant: "error",
+      });
+    }
+  };
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [modalId, setModalId] = useState(0);
@@ -52,7 +89,7 @@ const OrdersComponent = () => {
       });
     }
   };
-  
+
   return (
     <View style={{ flex: 1 }}>
       <View style={{ padding: 16, paddingBottom: 8, marginBottom: 5 }}>
@@ -136,8 +173,8 @@ const OrdersComponent = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 24,
-              right: 24,
+              bottom: 7,
+              right: 7,
               zIndex: 1000,
             }}
           >
@@ -180,14 +217,18 @@ const OrdersComponent = () => {
                   handleMarkAsDelivered={() => {
                     router.push(`/saleOrder/${item.id}`);
                   }}
-                  handleReverseToPending={() =>
-                    changeOrderStatus(ORDERSTATUS.PENDING, item.id)
-                  }
+                  handleReverseToPending={() => {
+                    setModalId(item.id);
+                    reverseToPending.open();
+                  }}
                 />
               ) : item.status === "delivered" ? (
                 <OrderDeliveredCard
                   order={item}
-                  handleReverseToPurchased={() => reverseSale(item.id)}
+                  handleReverseToPurchased={() => {
+                    setModalId(item.id);
+                    reverseToPurchased.open();
+                  }}
                 />
               ) : null;
             }}
@@ -195,8 +236,8 @@ const OrdersComponent = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 24,
-              right: 24,
+              bottom: 7,
+              right: 7,
               zIndex: 1000,
             }}
           >
@@ -225,6 +266,34 @@ const OrdersComponent = () => {
               dialog.close();
             }}
             onCancel={dialog.close}
+          />
+
+          <AlertDialog
+            isVisible={reverseToPending.isVisible}
+            onClose={reverseToPending.close}
+            title="Are you Sure you want to reverse this order to a Pending state?"
+            description="This action cannot be undone, and tracks of this won't be seen."
+            confirmText="Yes, reverse"
+            cancelText="Cancel"
+            onConfirm={async () => {
+              await handlePurchasedReversal()
+              reverseToPending.close();
+            }}
+            onCancel={reverseToPending.close}
+          />
+
+          <AlertDialog
+            isVisible={reverseToPurchased.isVisible}
+            onClose={reverseToPurchased.close}
+            title="Are you Sure you want to reverse this order to a Purchased state?"
+            description="This action cannot be undone, and tracks of this won't be seen."
+            confirmText="Yes, reverse"
+            cancelText="Cancel"
+            onConfirm={async () => {
+              await handleDeliveredReversal();
+              reverseToPurchased.close();
+            }}
+            onCancel={reverseToPurchased.close}
           />
         </View>
       )}

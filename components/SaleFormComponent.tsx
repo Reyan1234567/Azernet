@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,6 +9,8 @@ import { Text } from "./ui/text";
 import { Input } from "./ui/input";
 import { changeStatus } from "@/service/orders";
 import { ORDERSTATUS } from "@/constants";
+import { useColor } from "@/hooks/useColor";
+import { Separator } from "./ui/separator";
 
 const saleFormSchema = z.object({
   pricePerItemS: z.number().min(0.01, "Price must be greater than 0"),
@@ -23,7 +25,9 @@ interface SaleFormComponentProps {
 
 const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
   const { toast } = useToast();
-
+  const [quantity, setQuantity] = useState(0);
+  const [pricePerItem, setPricePerItem] = useState(0);
+  const destructive = useColor("destructive");
   const {
     control,
     handleSubmit,
@@ -36,7 +40,7 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
     },
   });
 
-  const handleFormSubmit = async (data: SaleFormData) => {
+  const onSubmit = async (data: SaleFormData) => {
     try {
       await changeStatus(
         ORDERSTATUS.DELIVERED,
@@ -59,6 +63,16 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
 
   return (
     <View style={{ gap: 20, padding: 16 }}>
+      <Text
+        style={{
+          fontSize: 32,
+          fontWeight: "bold",
+          marginBottom: 20,
+          color: useColor("text"),
+        }}
+      >
+        Place a Sale
+      </Text>
       <Controller
         control={control}
         name="pricePerItemS"
@@ -69,6 +83,7 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
             value={field.value.toString()}
             onChangeText={(text) => {
               text = text.trim().replace(/\D/g, "");
+              setPricePerItem(Number(text));
               field.onChange(Number(text));
             }}
             keyboardType="numeric"
@@ -77,7 +92,7 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
         )}
       />
       {errors.pricePerItemS && (
-        <Text style={{ color: "red", fontSize: 14 }}>
+        <Text style={{ color: destructive, fontSize: 14 }}>
           {errors.pricePerItemS.message}
         </Text>
       )}
@@ -92,6 +107,7 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
             value={field.value.toString()}
             onChangeText={(text) => {
               text = text.trim().replace(/\D/g, "");
+              setQuantity(Number(text));
               field.onChange(Number(text));
             }}
             keyboardType="numeric"
@@ -100,14 +116,30 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
         )}
       />
       {errors.unpaidAmountS && (
-        <Text style={{ color: "red", fontSize: 14 }}>
+        <Text style={{ color: destructive, fontSize: 14 }}>
           {errors.unpaidAmountS.message}
         </Text>
       )}
 
+      <Separator />
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          margin: 5,
+          marginTop: 10,
+        }}
+      >
+        <Text variant="caption" style={{ color: useColor("text") }}>
+          LINE TOTAL:{" "}
+        </Text>
+        <Text variant="caption" style={{ color: useColor("text") }}>
+          {quantity * pricePerItem}
+        </Text>
+      </View>
       <View style={{ flexDirection: "row", gap: 12, marginTop: 10 }}>
         <Button
-          onPress={handleSubmit(handleFormSubmit)}
+          onPress={handleSubmit(onSubmit)}
           style={{ flex: 1 }}
           loading={isSubmitting}
         >

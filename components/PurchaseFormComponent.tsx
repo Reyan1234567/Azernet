@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,6 +23,9 @@ import {
 import { changeStatus } from "@/service/orders";
 import { ORDERSTATUS } from "@/constants";
 import { router } from "expo-router";
+import { useColor } from "@/hooks/useColor";
+import { Separator } from "./ui/separator";
+import { Spinner } from "./ui/spinner";
 
 const purchaseFormSchema = z.object({
   supplierId: z.number().min(1, "Please select a supplier"),
@@ -40,7 +43,12 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
   id,
 }) => {
   const { toast } = useToast();
-  const queryClient=useQueryClient()
+  const textColor=useColor("text")
+  const primary=useColor("primary")
+  const [quantity, setQuantity] = useState(0);
+  const [pricePerItem, setPricePerItem] = useState(0);
+  
+  const queryClient = useQueryClient();
   const {
     control,
     handleSubmit,
@@ -54,8 +62,7 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
     },
   });
 
-  const [selectedSupplier, setSelectedSupplier] =
-    React.useState<OptionType | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = React.useState<OptionType | null>(null);
 
   // Fetch suppliers
   const {
@@ -69,16 +76,7 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
       return suppliers;
     },
   });
-  const [comboboxReady, setComboboxReady] = useState(false);
 
-  useEffect(() => {
-    // Give the BottomSheet time to fully render before enabling the combobox
-    const timer = setTimeout(() => {
-      setComboboxReady(true);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
   const onSubmit = async (data: PurchaseFormData) => {
     try {
       await changeStatus(
@@ -93,9 +91,9 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
         variant: "success",
       });
       queryClient.invalidateQueries({
-        queryKey:["orders"]
-      })
-      router.back()
+        queryKey: ["orders"]
+      });
+      router.back();
     } catch (error: any) {
       toast({
         title: "Failed to submit purchase data",
@@ -105,66 +103,81 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
     }
   };
 
+  // Show loading spinner while data is being fetched
+  if (suppliersLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center"}}>
+        <Spinner/>
+        <Text style={{ marginTop: 16, color: textColor}}>
+          Loading suppliers...
+        </Text>
+      </View>
+    );
+  }
+
+  // Show error state if fetching failed
+  if (suppliersError) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+        <Text style={{ color: "red", textAlign: "center" }}>
+          Error loading suppliers: {suppliersError.message}
+        </Text>
+        <Button onPress={() => queryClient.refetchQueries({ queryKey: ["suppliers-purchase"] })} style={{ marginTop: 16 }}>
+          Retry
+        </Button>
+      </View>
+    );
+  }
+
+  // Render the actual form only when data is available
   return (
     <View style={{ gap: 20, padding: 16 }}>
-      <Text style={{ fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 }}>
+      <Text variant="heading" style={{ color: textColor}}>
         Place a Purchase
       </Text>
-      {suppliersLoading ? (
-        <View style={{ padding: 20, alignItems: "center" }}>
-          <Text>Loading suppliers...</Text>
-        </View>
-      ) : suppliersError ? (
-        <View style={{ padding: 20, alignItems: "center" }}>
-          <Text style={{ color: "red" }}>
-            Error loading suppliers: {suppliersError.message}
-          </Text>
-        </View>
-      ) : (
-        <Controller
-          control={control}
-          name="supplierId"
-          render={({ field }) => (
-            <View style={{ zIndex: 1000 }}>
-              <Combobox
-                value={selectedSupplier}
-                onValueChange={(option) => {
-                  console.log("Combobox option selected:", option);
-                  setSelectedSupplier(option);
-                  field.onChange(Number(option?.value));
-                }}
-                disabled={!comboboxReady}
-              >
-                <ComboboxTrigger error={!!errors.supplierId}>
-                  <ComboboxValue placeholder="Select supplier..." />
-                </ComboboxTrigger>
-                <ComboboxContent>
-                  <ComboboxInput placeholder="Search suppliers..." />
-                  <ComboboxList>
+
+      <Controller
+        control={control}
+        name="supplierId"
+        render={({ field }) => (
+          <View style={{ zIndex: 1000 }}>
+            <Combobox
+              value={selectedSupplier}
+              onValueChange={(option) => {
+                console.log("Combobox option selected:", option);
+                setSelectedSupplier(option);
+                field.onChange(Number(option?.value));
+              }}
+            >
+              <ComboboxTrigger error={!!errors.supplierId}>
+                <ComboboxValue placeholder="Select supplier..." />
+              </ComboboxTrigger>
+              <ComboboxContent>
+                <ComboboxInput placeholder="Search suppliers..." />
+                <ComboboxList>
+                  <ComboboxEmpty>
+                    <Button>No suppliers found, create new</Button>
+                  </ComboboxEmpty>
+                  {suppliersData && suppliersData.length > 0 ? (
+                    suppliersData.map((supplier) => (
+                      <ComboboxItem
+                        key={supplier.id}
+                        value={supplier.id.toString()}
+                      >
+                        {supplier.first_name + " " + supplier.last_name}
+                      </ComboboxItem>
+                    ))
+                  ) : (
                     <ComboboxEmpty>
-                      <Button>No suppliers found, create new</Button>
+                      <Text>No suppliers available</Text>
                     </ComboboxEmpty>
-                    {suppliersData && suppliersData.length > 0 ? (
-                      suppliersData.map((supplier) => (
-                        <ComboboxItem
-                          key={supplier.id}
-                          value={supplier.id.toString()}
-                        >
-                          {supplier.first_name + " " + supplier.last_name}
-                        </ComboboxItem>
-                      ))
-                    ) : (
-                      <ComboboxEmpty>
-                        <Text>No suppliers available</Text>
-                      </ComboboxEmpty>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-            </View>
-          )}
-        />
-      )}
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </View>
+        )}
+      />
       {errors.supplierId && (
         <Text style={{ color: "red", fontSize: 14 }}>
           {errors.supplierId.message}
@@ -181,6 +194,7 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
             value={field.value.toString()}
             onChangeText={(text) => {
               text = text.trim().replace(/\D/g, "");
+              setPricePerItem(Number(text));
               field.onChange(Number(text));
             }}
             keyboardType="numeric"
@@ -199,14 +213,19 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
             value={field.value.toString()}
             onChangeText={(text) => {
               text = text.trim().replace(/\D/g, "");
+              setQuantity(Number(text));
               field.onChange(Number(text));
             }}
             keyboardType="numeric"
             error={errors.unpaidAmountP?.message}
-          />
+          />  
         )}
       />
-
+      <Separator/>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", margin: 5, marginTop: 10 }}>
+        <Text variant="caption" style={{ color: textColor}}>LINE TOTAL: </Text>
+        <Text variant="caption" style={{ color: textColor}}>{quantity * pricePerItem}</Text>
+      </View>
       <View style={{ flexDirection: "row", gap: 12, marginTop: 10 }}>
         <Button
           onPress={handleSubmit(onSubmit)}

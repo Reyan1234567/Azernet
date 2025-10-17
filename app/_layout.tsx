@@ -58,6 +58,7 @@ export default function RootLayout() {
               />
               <Stack.Screen name="withdraw" options={{ headerTitle: "" }} />
               <Stack.Screen name="purchaseOrder/[id]" options={{ headerTitle: "" }} />
+              <Stack.Screen name="saleOrder/[id]" options={{ headerTitle: "" }} />
 
               <Stack.Screen name="+not-found" />
             </Stack>
