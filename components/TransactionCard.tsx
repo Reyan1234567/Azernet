@@ -27,7 +27,7 @@ const TransactionCard = ({
   handleEdit,
   transactionType = "item",
 }: transactionCardEssentials) => {
-  const isPurchase = transaction.status === "Purchase";
+  const isPurchase = transactionType === "item";
   const successColor = useColor("green");
   const textColor = useColor("text");
   const destructiveColor = useColor("red");
@@ -35,8 +35,8 @@ const TransactionCard = ({
 
   // Get the name based on transaction type
   const displayName = transactionType === "item" 
-    ? (transaction as ItemTransactionDisplay).item_name
-    : (transaction as CategoryTransactionDisplay).category_name;
+    ? (transaction as ItemTransactionDisplay).item_name ?? "Item"
+    : (transaction as CategoryTransactionDisplay).category_name ?? "Category";
 
   return (
     <Card style={{ marginVertical: 8 }}>
@@ -73,7 +73,7 @@ const TransactionCard = ({
       {/* Main Content */}
       <View style={{ marginBottom: 12 }}>
         <Text variant="title" style={{ marginBottom: 4, color: textColor }}>
-          {`${displayName} × ${transaction.amount}`}
+          {`${displayName} × ${transaction.amount ?? 0}`}
         </Text>
         <Text variant="body" style={{ color: mutedColor }}>
           {displayName}
@@ -91,7 +91,7 @@ const TransactionCard = ({
       >
         <Icon name={User} size={16} color={mutedColor} />
         <Text variant="caption" style={{ color: mutedColor }}>
-          {`${transaction.partner_first_name} ${transaction.partner_last_name}`}
+          {`${transaction.partner_first_name ?? ""} ${transaction.partner_last_name ?? ""}`.trim() || "No partner"}
         </Text>
       </View>
 
@@ -114,7 +114,7 @@ const TransactionCard = ({
             {isPurchase ? "Purchase Price" : "Sale Price"}
           </Text>
           <Text variant="subtitle" style={{ color: textColor }}>
-            ${transaction.line_total.toFixed(2)}
+            ${(transaction.line_total ?? 0).toFixed(2)}
           </Text>
         </View>
 
@@ -129,13 +129,13 @@ const TransactionCard = ({
             variant="body"
             style={{
               color:
-                transaction.unpaid_amount > 0
+                (transaction.unpaid_amount ?? 0) > 0
                   ? destructiveColor
                   : successColor,
               fontWeight: "600",
             }}
           >
-            ${transaction.unpaid_amount.toFixed(2)}
+            ${(transaction.unpaid_amount ?? 0).toFixed(2)}
           </Text>
           {transaction.unpaid_amount > 0 && (
             <Text
@@ -155,7 +155,7 @@ const TransactionCard = ({
             Total Amount
           </Text>
           <Text variant="body" style={{ color: mutedColor }}>
-            {transaction.amount} items
+            {transaction.amount ?? 0} items
           </Text>
         </View>
       </View>

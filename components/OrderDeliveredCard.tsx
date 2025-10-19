@@ -55,10 +55,10 @@ const OrderDeliveredCard = ({
       {/* Main Content */}
       <View style={{ marginBottom: 12 }}>
         <Text variant="title" style={{ marginBottom: 4, color: textColor }}>
-          {order.item_name || "Order"} × {order.number_of_items || 0}
+          {order.item_name ?? "Order"} × {order.number_of_items ?? 0}
         </Text>
         <Text variant="body" style={{ color: mutedColor }}>
-          {order.description || "No description"}
+          {order.description ?? "No description"}
         </Text>
       </View>
 
@@ -118,7 +118,7 @@ const OrderDeliveredCard = ({
             Items
           </Text>
           <Text variant="body" style={{ color: textColor }}>
-            {order.number_of_items || 0}
+            {order.number_of_items ?? 0}
           </Text>
         </View>
       </View>

@@ -50,10 +50,10 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
       {/* Main Content */}
       <View style={{ marginBottom: 12 }}>
         <Text variant="title" style={{ marginBottom: 4, color: textColor }}>
-          {`${transaction.item_name} × ${transaction.amount}`}
+          {`${transaction.item_name ?? "Item"} × ${transaction.amount ?? 0}`}
         </Text>
         <Text variant="body" style={{ color: mutedColor }}>
-          {transaction.item_name}
+          {transaction.item_name ?? "No item name"}
         </Text>
       </View>
 
@@ -68,7 +68,7 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
       >
         <Icon name={User} size={16} color={mutedColor} />
         <Text variant="caption" style={{ color: mutedColor }}>
-          {`${transaction.partner_first_name} ${transaction.partner_last_name}`}
+          {`${transaction.partner_first_name ?? ""} ${transaction.partner_last_name ?? ""}`.trim() || "No partner"}
         </Text>
       </View>
 
@@ -91,7 +91,7 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
             Sale Price
           </Text>
           <Text variant="subtitle" style={{ color: textColor }}>
-            ${transaction.line_total.toFixed(2)}
+            ${(transaction.line_total ?? 0).toFixed(2)}
           </Text>
         </View>
 
@@ -105,11 +105,11 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
           <Text
             variant="body"
             style={{
-              color: transaction.unpaid_amount > 0 ? successColor : mutedColor,
+              color: (transaction.unpaid_amount ?? 0) > 0 ? successColor : mutedColor,
               fontWeight: "600",
             }}
           >
-            ${transaction.unpaid_amount.toFixed(2)}
+            ${(transaction.unpaid_amount ?? 0).toFixed(2)}
           </Text>
           {transaction.unpaid_amount > 0 && (
             <Text
@@ -129,7 +129,7 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
             Quantity
           </Text>
           <Text variant="body" style={{ color: mutedColor }}>
-            {transaction.amount} items
+            {transaction.amount ?? 0} items
           </Text>
         </View>
       </View>

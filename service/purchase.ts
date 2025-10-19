@@ -11,7 +11,7 @@ type purchaseInput = {
   pricePerItem: number;
   numberOfItems: number;
   unpaidAmount: number;
-  is_deleted:boolean
+  is_deleted: boolean;
 };
 export const purchase = async ({
   itemId,
@@ -19,8 +19,13 @@ export const purchase = async ({
   pricePerItem,
   numberOfItems,
   unpaidAmount,
-  is_deleted
+  is_deleted,
 }: purchaseInput) => {
+  if (!itemId || !partnerId || !pricePerItem || !numberOfItems) {
+    throw new Error(
+      "Some values necessary to create a purchase are not present!"
+    );
+  }
   //Item existence check
   const item_id = await checkItemExistence(itemId);
   //Partner existence check
@@ -45,7 +50,7 @@ export const purchase = async ({
       line_total: lineTotal,
       partner_id: partnerId,
       item_id: itemId,
-      is_deleted
+      is_deleted,
     })
     .select()
     .single();
@@ -61,7 +66,7 @@ export const purchase = async ({
       businessId,
       InventoryTypes.OUT,
       `Purchase from partner with id: ${partnerId}`,
-      -1*lineTotal
+      -1 * lineTotal
     );
     return data;
   }

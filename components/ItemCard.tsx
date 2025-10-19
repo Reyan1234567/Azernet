@@ -38,10 +38,10 @@ const ItemCard = ({ item, onEdit, onDelete }: ItemCardProps) => {
         >
           <View style={{ flex: 1 }}>
             <Text variant="title" style={{ marginBottom: 4, color: textColor }}>
-              {item.name}
+              {item.name ?? "Unnamed Item"}
             </Text>
             <Text variant="body" style={{ color: mutedColor, marginBottom: 8 }}>
-              Measure: {item.measure} 
+              Measure: {item.measure ?? "No measure"}
             </Text>
             <View style={{ flexDirection: "row", gap: 16 }}>
               <View>
@@ -55,7 +55,7 @@ const ItemCard = ({ item, onEdit, onDelete }: ItemCardProps) => {
                   variant="body"
                   style={{ fontWeight: "600", color: textColor }}
                 >
-                  {item?.purchasePrice?.toFixed(2) ?? "Unspecified"} ETB
+                  {(item.purchasePrice ?? 0).toFixed(2)} ETB
                 </Text>
               </View>
               <View>
@@ -69,7 +69,7 @@ const ItemCard = ({ item, onEdit, onDelete }: ItemCardProps) => {
                   variant="body"
                   style={{ fontWeight: "600", color: textColor }}
                 >
-                  {item?.sellingPrice?.toFixed(2) ?? "Unspecified"} ETB
+                  {(item.sellingPrice ?? 0).toFixed(2)} ETB
                 </Text>
               </View>
             </View>

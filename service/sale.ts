@@ -11,8 +11,13 @@ export const sell = async (
   pricePerItem: number,
   numberOfItems: number,
   unpaidAmount: number,
-  is_deleted:boolean
+  is_deleted: boolean
 ) => {
+  if (!itemId || !partnerId || !pricePerItem || !numberOfItems) {
+    throw new Error(
+      "Some values necessary to create a purchase are not present!"
+    );
+  }
   //Item existence check
   const item_id = await checkItemExistence(itemId);
   //Partner existence check
@@ -40,7 +45,7 @@ export const sell = async (
       line_total: lineTotal,
       partner_id: partnerId,
       item_id: itemId,
-      is_deleted
+      is_deleted,
     })
     .select()
     .single();

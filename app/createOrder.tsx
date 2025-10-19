@@ -26,7 +26,7 @@ import CreatePartnerForm from "@/components/CreatePartnerForm";
 import { useRouter } from "expo-router";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
-import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createOrder } from "@/service/orders";
 
 const formSchema = z.object({

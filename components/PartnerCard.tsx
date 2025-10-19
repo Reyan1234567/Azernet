@@ -30,10 +30,10 @@ const PartnerCard= ({ partner, onEdit, onDelete }:PartnerCardProps) => {
       <View style={{ padding: 16 }}>
         <View style={{ marginBottom: 12 }}>
           <Text variant="title" style={{ fontSize: 18, fontWeight: "600", marginBottom: 4, color: textColor }}>
-            {partner.first_name} {partner.last_name}
+            {partner.first_name ?? ""} {partner.last_name ?? ""}
           </Text>
           <Text variant="body" style={{ color: mutedColor, fontSize: 14, marginBottom: 8 }}>
-            {partner.role}
+            {partner.role ?? "No role"}
           </Text>
           {partner.phone_number && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
