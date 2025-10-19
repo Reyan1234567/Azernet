@@ -6,6 +6,10 @@ export const createInventory = async (
   type: string,
   description: string
 ) => {
+  console.log("In createInventory")
+  if(typeof action!=='number'||!itemId||!type||!description){
+    throw new Error("Invalid action or item id");
+  }
   const { error } = await supabase.from("inventory_tracker").insert({
     item_id: itemId,
     action,
@@ -18,6 +22,7 @@ export const createInventory = async (
 };
 
 export const checkIfInvEnough = async (item_id_arg: number) => {
+  console.log(item_id_arg)
   let { data, error } = await supabase.rpc("checkifenoughinventory", {
     item_id_arg,
   });

@@ -120,7 +120,6 @@ const CreatePurchaseOrSale = () => {
           numberOfItems: formData.numberOfItems,
           pricePerItem: formData.price,
           unpaidAmount: formData.unpaidAmount,
-          is_deleted: false,
         });
         toast({
           title: "Purchase record created successfully",
@@ -134,6 +133,7 @@ const CreatePurchaseOrSale = () => {
           formData.numberOfItems,
           formData.price,
           formData.unpaidAmount,
+          false,
           false
         );
         toast({

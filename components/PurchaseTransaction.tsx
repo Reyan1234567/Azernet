@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getAllPurchaseTransactions,
-  deleteItemTransaction,
 } from "@/service/transaction";
 import { SearchBar } from "./ui/searchbar";
 import { Button } from "./ui/button";
@@ -16,6 +15,7 @@ import { Spinner } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
 import { reversePurchase } from "@/service/reversals";
+import { AlertDialog, useAlertDialog } from "./ui/alert-dialog";
 
 const PurchaseTransaction = () => {
   const { toast } = useToast();
@@ -25,6 +25,8 @@ const PurchaseTransaction = () => {
   const textColor = useColor("text");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const dialog = useAlertDialog();
+  const [modalId, setModalId]=useState(0)
 
   const filters = ["All", "Paid", "Unpaid"];
   const debouncedSearchTerm = useDebounce(search, 300);
@@ -151,18 +153,8 @@ const PurchaseTransaction = () => {
             renderItem={({ item }) => (
               <PurchaseCard
                 handleReverse={() => {
-                  toast({
-                    title: `Are you sure you want to reverse this purchase?`,
-                    duration: 10000,
-                    description: `${item.item_name} purchase will be reversed`,
-                    variant: "warning",
-                    action: {
-                      label: "Reverse",
-                      onPress: () => {
-                        handleReverseTransaction(item.id);
-                      },
-                    },
-                  });
+                  setModalId(item.id)
+                  dialog.open()
                 }}
                 transaction={item}
               />
@@ -191,6 +183,17 @@ const PurchaseTransaction = () => {
           </View>
         </View>
       ) : null}
+      <AlertDialog
+        isVisible={dialog.isVisible}
+        onClose={dialog.close}
+        title='Are Sure you want to reverse this purchase?'
+        description='This action cannot be undone.'
+        confirmText='Yes, Reverse'
+        cancelText='Cancel'
+        onConfirm={() => {handleReverseTransaction(modalId)
+        }}
+        onCancel={dialog.close}
+      />
     </View>
   );
 };

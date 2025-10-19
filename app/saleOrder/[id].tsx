@@ -5,7 +5,7 @@ import SaleFormComponent from "@/components/SaleFormComponent";
 
 const SaleOrder = () => {
   const modalId = useLocalSearchParams().id as string;
-
+  console.log(modalId)
   return (
     <View>
       <SaleFormComponent id={Number(modalId)} />

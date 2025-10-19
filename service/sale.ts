@@ -11,59 +11,51 @@ export const sell = async (
   pricePerItem: number,
   numberOfItems: number,
   unpaidAmount: number,
-  is_deleted: boolean
 ) => {
-  if (!itemId || !partnerId || !pricePerItem || !numberOfItems) {
+  if (
+    !itemId ||
+    !partnerId ||
+    !pricePerItem ||
+    !numberOfItems ||
+    typeof unpaidAmount !== "number"
+  ) {
     throw new Error(
       "Some values necessary to create a purchase are not present!"
     );
   }
+  console.log(`Number of items: ${numberOfItems}`)
   //Item existence check
   const item_id = await checkItemExistence(itemId);
   //Partner existence check
   await checkPartnerExistence(partnerId);
   //calculate line_total
   const lineTotal = pricePerItem * numberOfItems;
+  console.log(`lineTotal: ${lineTotal}`);
   //create var business_id related to the item_id
   const businessId = item_id.business_id;
+  console.log(`businessId: ${businessId}`);
 
   //Check if inventory exists for a sell to be possible
   const amountLeft = await checkIfInvEnough(itemId);
-
-  const left = Number(amountLeft[0].total_item?.amountLeft);
+  console.log(amountLeft);
+  const left = Number(amountLeft[0].total_item);
+  console.log(`left: ${left}`);
   if (left - numberOfItems < 0) {
+    console.log(`Not enough Items, only ${left} are present`)
     throw new Error(`Not enough Items, only ${left} are present`);
   }
 
-  //create a sell
-  const { data, error } = await supabase
-    .from("sales")
-    .insert({
-      number_of_items: numberOfItems,
-      price_per_item: pricePerItem,
-      unpaid_amount: unpaidAmount,
-      line_total: lineTotal,
-      partner_id: partnerId,
-      item_id: itemId,
-      is_deleted,
-    })
-    .select()
-    .single();
-
-  if (data) {
-    createInventory(
-      -1 * numberOfItems,
-      itemId,
-      InventoryTypes.OUT,
-      `Sale of item ${itemId}`
-    );
-    createBusinessCash(
-      businessId,
-      InventoryTypes.IN,
-      `Sale to partner with id: ${partnerId}`,
-      lineTotal
-    );
-    return data;
-  }
-  throw new Error(error?.message ?? "Something went wrong");
+  let { data, error } = await supabase.rpc("sell", {
+    businessid:businessId, 
+    isdeleted:false, 
+    itemid:itemId, 
+    linetotal:lineTotal, 
+    numberofitems:numberOfItems, 
+    partnerid:partnerId, 
+    priceperitem:pricePerItem, 
+    reversal:false, 
+    unpaidamount:unpaidAmount
+  });
+  if (error) throw new Error(error?.message ?? "Something went wrong");
+  else return data;
 };

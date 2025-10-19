@@ -11,6 +11,8 @@ import { changeStatus } from "@/service/orders";
 import { ORDERSTATUS } from "@/constants";
 import { useColor } from "@/hooks/useColor";
 import { Separator } from "./ui/separator";
+import { useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 
 const saleFormSchema = z.object({
   pricePerItemS: z.number().min(0.01, "Price must be greater than 0"),
@@ -24,6 +26,7 @@ interface SaleFormComponentProps {
 }
 
 const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
+  const queryClient=useQueryClient()
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(0);
   const [pricePerItem, setPricePerItem] = useState(0);
@@ -52,12 +55,15 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
         title: "Sale data submitted successfully",
         variant: "success",
       });
+      queryClient.invalidateQueries({queryKey:["orders", "purchases", "sales"]})
+      router.back()
     } catch (error: any) {
       toast({
         title: "Failed to submit sale data",
         description: error.message ?? "Something went wrong",
         variant: "error",
       });
+      router.back()
     }
   };
 
@@ -120,23 +126,6 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
           {errors.unpaidAmountS.message}
         </Text>
       )}
-
-      <Separator />
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          margin: 5,
-          marginTop: 10,
-        }}
-      >
-        <Text variant="caption" style={{ color: useColor("text") }}>
-          LINE TOTAL:{" "}
-        </Text>
-        <Text variant="caption" style={{ color: useColor("text") }}>
-          {quantity * pricePerItem}
-        </Text>
-      </View>
       <View style={{ flexDirection: "row", gap: 12, marginTop: 10 }}>
         <Button
           onPress={handleSubmit(onSubmit)}

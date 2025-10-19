@@ -10,6 +10,7 @@ import {
   DollarSign,
   Package,
   Building2,
+  Building,
 } from "lucide-react-native";
 import React from "react";
 import { Platform, StyleSheet } from "react-native";
@@ -117,10 +118,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="businesses"
         options={{
-          title: "Businesses",
+          title: "Business",
           tabBarIcon: ({ color }) => (
             <Icon
-              name={Building2}
+              name={Building}
               size={24}
               color={color}
               style={{ marginRight: 4 }}

@@ -13,6 +13,7 @@ import { Spinner } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
 import { reverseSale } from "@/service/reversals";
+import { AlertDialog, useAlertDialog } from "./ui/alert-dialog";
 
 const SalesTransaction = () => {
   const { toast } = useToast();
@@ -21,7 +22,8 @@ const SalesTransaction = () => {
   const red = useColor("red");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-
+  const [modalId, setModalId] = useState(0);
+  const dialog = useAlertDialog();
   const filters = ["All", "Paid", "Unpaid"];
   const debouncedSearchTerm = useDebounce(search, 300);
 
@@ -148,18 +150,8 @@ const SalesTransaction = () => {
             renderItem={({ item }) => (
               <SalesCard
                 handleReverse={() => {
-                  toast({
-                    title: `Are you sure you want to reverse this sale?`,
-                    duration: 10000,
-                    description: `${item.item_name} sale will be marked as reversed`,
-                    variant: "warning",
-                    action: {
-                      label: "Reverse",
-                      onPress: () => {
-                        handleReverseTransaction(item.id);
-                      },
-                    },
-                  });
+                  setModalId(item.id);
+                  dialog.open();
                 }}
                 transaction={item}
               />
@@ -188,6 +180,18 @@ const SalesTransaction = () => {
           </View>
         </View>
       ) : null}
+      <AlertDialog
+        isVisible={dialog.isVisible}
+        onClose={dialog.close}
+        title="Are you sure you want to reverse this sale?"
+        description="This action cannot be undone."
+        confirmText="Yes, Reverse"
+        cancelText="Cancel"
+        onConfirm={() => {
+          handleReverseTransaction(modalId);
+        }}
+        onCancel={dialog.close}
+      />
     </View>
   );
 };

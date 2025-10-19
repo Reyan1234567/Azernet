@@ -7,8 +7,8 @@ export type ItemTransactionDisplay = {
   unpaid_amount: number;
   created_at: string;
   line_total: number;
-  partner_first_name: string;
-  partner_last_name: string;
+  first_name: string;
+  last_name: string;
   item_name: string;
 };
 export type TransactionDisplay = {

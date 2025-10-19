@@ -24,7 +24,6 @@ const PurchaseCard = ({
 
   return (
     <Card style={{ marginVertical: 8 }}>
-      {/* Status Header */}
       <View
         style={{
           flexDirection: "row",
@@ -50,7 +49,6 @@ const PurchaseCard = ({
         </Text>
       </View>
 
-      {/* Main Content */}
       <View style={{ marginBottom: 12 }}>
         <Text variant="title" style={{ marginBottom: 4, color: textColor }}>
           {`${transaction.item_name ?? "Item"} × ${transaction.amount ?? 0}`}
@@ -60,7 +58,6 @@ const PurchaseCard = ({
         </Text>
       </View>
 
-      {/* Partner Info */}
       <View
         style={{
           flexDirection: "row",
@@ -71,7 +68,7 @@ const PurchaseCard = ({
       >
         <Icon name={User} size={16} color={mutedColor} />
         <Text variant="caption" style={{ color: mutedColor }}>
-          {`${transaction.partner_first_name ?? ""} ${transaction.partner_last_name ?? ""}`.trim() || "No partner"}
+          {`${transaction.first_name ?? ""} ${transaction.last_name ?? ""}`.trim() || "No partner"}
         </Text>
       </View>
 
@@ -138,7 +135,6 @@ const PurchaseCard = ({
         </View>
       </View>
 
-      {/* Action Buttons */}
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Button
           variant="outline"

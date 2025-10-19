@@ -8,6 +8,10 @@ export const createBusinessCash = async (
   description: string,
   amount: number
 ) => {
+  console.log("In createBusinessCash");
+  if (typeof businessId !== "number" || !amount || !description || !amount) {
+    throw new Error("Invalid businessId or amount or description or type");
+  }
   await businessIdExist(businessId);
   const { data, error } = await supabase
     .from("business_cash")
@@ -68,9 +72,7 @@ export const getSumMoney = async (business_id_arg: number) => {
   return data;
 };
 
-export const checkIfEnough = async (
-  business_id_arg: number
-) => {
+export const checkIfEnough = async (business_id_arg: number) => {
   let { data, error } = await supabase.rpc("checkifenoughcash", {
     business_id_arg,
   });
@@ -80,5 +82,5 @@ export const checkIfEnough = async (
         "Something went wrong when checking if available cash is enough"
     );
   }
-  return data
+  return data;
 };

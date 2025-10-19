@@ -11,7 +11,6 @@ type purchaseInput = {
   pricePerItem: number;
   numberOfItems: number;
   unpaidAmount: number;
-  is_deleted: boolean;
 };
 export const purchase = async ({
   itemId,
@@ -19,13 +18,26 @@ export const purchase = async ({
   pricePerItem,
   numberOfItems,
   unpaidAmount,
-  is_deleted,
 }: purchaseInput) => {
-  if (!itemId || !partnerId || !pricePerItem || !numberOfItems) {
+  console.log("Entering purchase function with params:", {
+    itemId,
+    partnerId,
+    pricePerItem,
+    numberOfItems,
+    unpaidAmount,
+  });
+  if (
+    !itemId ||
+    !partnerId ||
+    !pricePerItem ||
+    !numberOfItems ||
+    typeof unpaidAmount !== "number"
+  ) {
     throw new Error(
       "Some values necessary to create a purchase are not present!"
     );
   }
+  console.log("Input validation passed");
   //Item existence check
   const item_id = await checkItemExistence(itemId);
   //Partner existence check
@@ -41,34 +53,20 @@ export const purchase = async ({
     throw new Error("You don't have enough assets to fund this purchase!");
   }
   //create a purchase
-  const { data, error } = await supabase
-    .from("purchases")
-    .insert({
-      number_of_items: numberOfItems,
-      price_per_item: pricePerItem,
-      unpaid_amount: unpaidAmount,
-      line_total: lineTotal,
-      partner_id: partnerId,
-      item_id: itemId,
-      is_deleted,
-    })
-    .select()
-    .single();
-
-  if (data) {
-    createInventory(
-      numberOfItems,
-      itemId,
-      InventoryTypes.IN,
-      `Purchase of item ${itemId}`
-    );
-    createBusinessCash(
-      businessId,
-      InventoryTypes.OUT,
-      `Purchase from partner with id: ${partnerId}`,
-      -1 * lineTotal
-    );
-    return data;
-  }
-  throw new Error(error?.message ?? "Something went wrong");
+  console.log("About to create purchase record");
+  let { data, error } = await supabase.rpc("purchase", {
+    businessid: businessId,
+    isdeleted: false,
+    itemid: itemId,
+    linetotal: lineTotal,
+    numberofitems: numberOfItems,
+    partnerid: partnerId,
+    priceperitem: pricePerItem,
+    reversal: false,
+    unpaidamount: unpaidAmount,
+  });
+  if (error) {
+    console.log(error.message)
+    throw new Error(error?.message ?? "Something went wrong");
+  } else return data;
 };

@@ -2,9 +2,6 @@ import { supabase } from "@/lib/supabase";
 import { checkItemExistence } from "./item";
 import { checkPartnerExistence } from "./partners";
 import { ORDERSTATUS } from "@/constants";
-import { purchase } from "./purchase";
-import { sell } from "./sale";
-import { reversePurchase, reverseSale } from "./reversals";
 
 export const createOrder = async (
   itemId: number,
@@ -48,33 +45,50 @@ export const changeStatus = async (
         "Something went wrong when checking an order's existence"
     );
   }
+  console.log(order.data);
+  const business = await supabase
+    .from("items")
+    .select("*")
+    .eq("id", order.data.item_id)
+    .single();
+
+  console.log("Bussiness ID: " + business.data.business_id);
+
   if (status === ORDERSTATUS.PENDING) {
     if (order.data.status !== ORDERSTATUS.PURCHASED) {
       throw new Error(
         "Can only change to status:- pending from a status:- purchased"
       );
     }
-    const pending = await changeOrderStatus(ORDERSTATUS.PENDING, id);
-    if (pending.error) {
-      throw new Error(
-        pending.error?.message ??
-          "Somethig went wrong when changing order status to pending"
-      );
-    }
-    await reversePurchase(order.data.purchase_id);
-    const nullifyPurchase = await supabase
-      .from("orders")
-      .update({ purchase_id: null })
-      .eq("id", id);
 
-    if (nullifyPurchase.error) {
+    let purchase = await supabase
+      .from("purchases")
+      .select("*")
+      .eq("id", order.data.purchase_id)
+      .single();
+
+    if (purchase.error)
       throw new Error(
-        nullifyPurchase.error.message ??
-          "Something went wrong when nullifying purchase_id"
+        purchase.error?.message ??
+          "Something went wrong when checking an order's purchase"
       );
-    }
-    await changeOrderStatus(ORDERSTATUS.PENDING, id);
-    return pending.data;
+
+    let reverseordertopending = await supabase.rpc("reverseordertopending", {
+      businessid: business.data.business_id,
+      itemid: purchase.data.item_id,
+      linetotal: purchase.data.line_total,
+      numberofitems: purchase.data.number_of_items,
+      order_id: order.data.id,
+      partnerid: purchase.data.partner_id,
+      priceperitem: purchase.data.price_per_item,
+      purchase_id: purchase.data.id,
+      unpaidamount: purchase.data.unpaid_amount,
+    });
+    if (reverseordertopending.error)
+      throw new Error(
+        reverseordertopending.error?.message ??
+          "Something went wrong when reversing order to pending"
+      );
   }
   if (status === ORDERSTATUS.PURCHASED) {
     if (order.data.status === ORDERSTATUS.PURCHASED) {
@@ -82,96 +96,79 @@ export const changeStatus = async (
         "Can only change to status:- purchas from a status:- pending or delivered"
       );
     }
-    if (order.data.status === ORDERSTATUS.PENDING) {
-      const purchaseValue = await purchase({
-        itemId: order.data.item_id,
-        partnerId: partner!,
-        pricePerItem: pricePerAmount!,
-        numberOfItems: order.data.number_of_items,
-        unpaidAmount: unpaidAmount!,
-        is_deleted: false,
-      });
-      const ppid = await supabase
-        .from("orders")
-        .update({ purchase_id: purchaseValue.id })
-        .eq("id", id);
 
-      if (ppid.error) {
-        throw new Error(
-          ppid.error.message ??
-            "Something went wrong when updating the purchasId"
-        );
+    if (order.data.status === ORDERSTATUS.PENDING) {
+      if (!pricePerAmount || !partner) {
+        throw new Error("pricePerItem or partner weren't provided!");
       }
-      const pendingToPurchased = await changeOrderStatus(
-        ORDERSTATUS.PURCHASED,
-        id
-      );
-      if (pendingToPurchased.error) {
+      let { error } = await supabase.rpc("markaspurchased", {
+        business_id: business.data.business_id,
+        item_id: order.data.item_id,
+        line_total: pricePerAmount! * order.data.number_of_items,
+        number_of_items: order.data.number_of_items,
+        order_id: order.data.id,
+        partner_id: partner,
+        price_per_item: pricePerAmount,
+        unpaid_amount: unpaidAmount,
+      });
+      if (error) {
         throw new Error(
-          pendingToPurchased.error?.message ??
-            "Something went wrong when changing status from pending to purchased!"
+          error.message ??
+            `Something went wrong when marking order with id: ${order.data.id} as purchased`
         );
       }
     } else {
-      await reverseSale(order.data.sale_id);
-      const ppid = await supabase
-        .from("orders")
-        .update({ sale_id: null })
-        .eq("id", id);
-      if (ppid.error) {
+      const sale = await supabase
+        .from("sales")
+        .select("*")
+        .eq("id", order.data.sale_id)
+        .single();
+      if (sale.error) {
         throw new Error(
-          ppid.error.message ?? "Something went wrong when updating the saleId"
+          sale.error.message ??
+            `Something went wrong when checking order with id: ${order.data.id}`
         );
       }
-      const deliveredToPurchased = await changeOrderStatus(
-        ORDERSTATUS.PURCHASED,
-        id
-      );
-      if (deliveredToPurchased.error) {
+      let { error } = await supabase.rpc("reverseordertopurchased", {
+        businessid: business.data.business_id,
+        itemid: sale.data.item_id,
+        linetotal: sale.data.line_total,
+        numberofitems: sale.data.number_of_items,
+        order_id: order.data.id,
+        partnerid: sale.data.partner_id,
+        priceperitem: sale.data.price_per_item,
+        purchase_id: sale.data.id,
+        unpaidamount: sale.data.unpaid_amount,
+      });
+      if (error) {
         throw new Error(
-          deliveredToPurchased.error?.message ??
-            "Something went wrong when changing status from delivered to purchased!"
+          error.message ??
+            `Something went wrong when reversing sale with id: ${sale.data.id}`
         );
       }
     }
   }
   if (status === "delivered") {
-    if (order.data.status !== ORDERSTATUS.PURCHASED) {
+    if (!unpaidAmount || !pricePerAmount) {
+      throw new Error("pricePerItem or unpaidAmount weren't provided!");
+    }
+    let { error } = await supabase.rpc("markasdelivered", {
+      business_id: business.data.business_id,
+      item_id: order.data.item_id,
+      line_total: pricePerAmount * order.data.number_of_items,
+      number_of_items: order.data.number_of_items,
+      order_id: order.data.id,
+      partner_id: order.data.consumer_id,
+      price_per_item: pricePerAmount,
+      unpaid_amount: unpaidAmount,
+    });
+    if (error) {
       throw new Error(
-        "Can only change to status:- delivered from a status:- purchased"
+        error.message ??
+          `Something went wrong when marking order with id: ${order.data.id} as delivered`
       );
     }
-    const saleValue = await sell(
-      order.data.item_id,
-      order.data.consumer_id,
-      pricePerAmount!,
-      order.data.number_of_items,
-      unpaidAmount!,
-      false
-    );
-    const saleIdUpdate = await supabase
-      .from("orders")
-      .update({ sale_id: saleValue.data.id })
-      .eq("id", id);
-    if (saleIdUpdate.error) {
-      throw new Error(
-        saleIdUpdate.error.message ??
-          "Something went wrong when updating the saleId"
-      );
-    }
-    const delivered = await changeOrderStatus(ORDERSTATUS.DELIVERED, id);
-    if (delivered.error) {
-      throw new Error(
-        delivered.error?.message ??
-          "Something went wrong when changing order status to delivered"
-      );
-    }
-    return delivered.data;
   }
-};
-
-export const changeOrderStatus = async (status: string, id: number) => {
-  return await supabase.from("orders").update({ status: status }).eq("id", id);
 };
 
 export const getAllOrders = async (
@@ -215,143 +212,3 @@ export const deleteOrder = async (id: number) => {
   }
   return data;
 };
-
-//export const changeStatus = async (
-//   status: string,
-//   id: number,
-//   pricePerAmount?: number,
-//   unpaidAmount?: number,
-//   partner?: number
-// ) => {
-//   const order = await supabase.from("orders").select("*").eq("id", id).single();
-//   if (order.error) {
-//     throw new Error(
-//       order.error.message ??
-//         "Something went wrong when checking an order's existence"
-//     );
-//   }
-
-//   // Pending
-//   if (status === ORDERSTATUS.PENDING) {
-//     if (order.data.status !== ORDERSTATUS.PURCHASED) {
-//       throw new Error(
-//         "Can only change to status:- pending from a status:- purchased"
-//       );
-//     }
-//     const pending = await changeOrderStatus(ORDERSTATUS.PENDING, id);
-//     if (pending.error) {
-//       throw new Error(
-//         pending.error.message ??
-//           "Something went wrong when changing order status to pending"
-//       );
-//     }
-//     await reversePurchase(order.data.purchase_id);
-//     return pending.data;
-//   }
-
-//   // Purchased
-//   if (status === ORDERSTATUS.PURCHASED) {
-//     if (order.data.status === ORDERSTATUS.PURCHASED) {
-//       throw new Error(
-//         "Can only change to status:- purchased from a status:- pending or delivered"
-//       );
-//     }
-//     if (order.data.status === ORDERSTATUS.PENDING) {
-//       const pendingToPurchased = await changeOrderStatus(ORDERSTATUS.PURCHASED, id);
-//       if (pendingToPurchased.error) {
-//         throw new Error(
-//           pendingToPurchased.error.message ??
-//             "Something went wrong when changing status from pending to purchased!"
-//         );
-//       }
-//       await reverseSale(order.data.sale_id);
-//       const ppid = await supabase.from("orders").update({ sale_id: null }).eq("id", id);
-//       if (ppid.error) {
-//         throw new Error(
-//           ppid.error.message ??
-//             "Something went wrong when updating the saleId"
-//         );
-//       }
-//       return pendingToPurchased.data;
-//     }
-//     // From delivered to purchased
-//     if (
-//       order.data.status === ORDERSTATUS.DELIVERED &&
-//       partner != null &&
-//       pricePerAmount != null &&
-//       unpaidAmount != null
-//     ) {
-//       const purchasedToPending = await changeOrderStatus(ORDERSTATUS.PENDING, id);
-//       if (purchasedToPending.error) {
-//         throw new Error(
-//           purchasedToPending.error.message ??
-//             "Something went wrong when changing status from delivered to purchased!"
-//         );
-//       }
-//       const purchaseValue = await purchase(
-//         order.data.item_id,
-//         partner,
-//         pricePerAmount,
-//         order.data.number_of_items,
-//         unpaidAmount
-//       );
-//       const ppid = await supabase
-//         .from("orders")
-//         .update({ purchase_id: purchaseValue.id })
-//         .eq("id", id);
-//       if (ppid.error) {
-//         throw new Error(
-//           ppid.error.message ??
-//             "Something went wrong when updating the purchaseId"
-//         );
-//       }
-//       return purchasedToPending.data;
-//     }
-//     throw new Error(
-//       "Missing required parameters for changing status from delivered to purchased!"
-//     );
-//   }
-
-//   // Delivered
-//   if (status === ORDERSTATUS.DELIVERED) {
-//     if (order.data.status !== ORDERSTATUS.PURCHASED) {
-//       throw new Error(
-//         "Can only change to status:- delivered from a status:- purchased"
-//       );
-//     }
-//     if (
-//       pricePerAmount == null ||
-//       unpaidAmount == null ||
-//       order.data.consumer_id == null
-//     ) {
-//       throw new Error("Missing required parameters for delivery!");
-//     }
-//     const delivered = await changeOrderStatus(ORDERSTATUS.DELIVERED, id);
-//     if (delivered.error) {
-//       throw new Error(
-//         delivered.error.message ??
-//           "Something went wrong when changing order status to delivered"
-//       );
-//     }
-//     const saleValue = await sell(
-//       order.data.item_id,
-//       order.data.consumer_id,
-//       pricePerAmount,
-//       order.data.number_of_items,
-//       unpaidAmount
-//     );
-//     const saleIdUpdate = await supabase
-//       .from("orders")
-//       .update({ sale_id: saleValue.data.id })
-//       .eq("id", id);
-//     if (saleIdUpdate.error) {
-//       throw new Error(
-//         saleIdUpdate.error.message ??
-//           "Something went wrong when updating the saleId"
-//       );
-//     }
-//     return delivered.data;
-//   }
-
-//   throw new Error("Invalid status transition requested.");
-// };
