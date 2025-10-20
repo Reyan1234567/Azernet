@@ -18,12 +18,6 @@ import { QueryClient, useQuery } from "@tanstack/react-query";
 
 const formSchema = z.object({
   itemName: z.string().min(1, "Item name is required"),
-  purchasePrice: z
-    .number({ invalid_type_error: "Purchase price is required" })
-    .positive("Price must be greater than zero"),
-  sellingPrice: z
-    .number({ invalid_type_error: "Selling price is required" })
-    .positive("Selling must be greater than zero"),
   measure: z.string().min(1, "Measurement is required"),
   description: z.string().optional(),
 });
@@ -44,7 +38,6 @@ const CreateItemForm = ({
   fromBottom,
   bgColor,
 }: itemCreation) => {
-
   const {
     control,
     handleSubmit,
@@ -54,39 +47,32 @@ const CreateItemForm = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       itemName: "",
-      purchasePrice: 0,
-      sellingPrice: 0,
       measure: "",
       description: "",
     },
   });
-  const queryClient=new QueryClient();
+  const queryClient = new QueryClient();
   const MeasureOptions = [
     { value: "Item", label: "Item" },
     { value: "KG", label: "KG" },
     { value: "Lt", label: "Lt" },
   ];
 
-  //   const bgColor = useColor("background");
   const textColor = useColor("text");
   const red = useColor("red");
   const { toast } = useToast();
 
-  // Fetch item data with useQuery
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["item", itemId],
     queryFn: () => getAsingleItem(Number(itemId)),
     enabled: !!isEditMode && !!itemId && itemId !== "new",
-    staleTime:0
+    staleTime: 0,
   });
 
-  // Reset form when data is loaded
   useEffect(() => {
     if (isEditMode && data) {
       reset({
         itemName: data.item_name,
-        purchasePrice: data.purchase_price,
-        sellingPrice: data.projected_selling_price,
         measure: data.measure,
         description: data.description,
       });
@@ -99,31 +85,31 @@ const CreateItemForm = ({
         await editItem({
           id: Number(itemId),
           item_name: data.itemName,
-          purchase_price: data.purchasePrice || 0,
-          projected_selling_price: data.sellingPrice || 0,
           measure: data.measure,
           description: data.description || "",
+          business_id: 1
         });
         toast({
           title: "Success!",
           description: "Item info has been updated.",
           variant: "success",
         });
-        queryClient.invalidateQueries({ queryKey: ["item"] });
+        await queryClient.invalidateQueries({ queryKey: ["items"] });
+        handleGoBack()
       } else {
         await createItem({
           item_name: data.itemName,
-          purchase_price: data.purchasePrice || 0,
-          projected_selling_price: data.sellingPrice || 0,
           measure: data.measure,
           description: data.description || "",
+          business_id: 1
         });
         toast({
           title: "Success!",
           description: "Item created successfully",
           variant: "success",
         });
-        handleGoBack()
+        await queryClient.invalidateQueries({ queryKey: ["items"] });
+        handleGoBack();
       }
     } catch (error) {
       toast({
@@ -132,9 +118,6 @@ const CreateItemForm = ({
         variant: "error",
       });
       console.error("Error saving item:", error);
-    }
-    finally{
-      queryClient.invalidateQueries({ queryKey: ["item"] });
     }
   };
 
@@ -177,7 +160,6 @@ const CreateItemForm = ({
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
       <View style={{ flex: 1 }}>
-        {/* Header */}
         <View
           style={{
             flexDirection: "row",
@@ -186,18 +168,10 @@ const CreateItemForm = ({
             paddingBottom: 0,
           }}
         >
-          {!fromBottom && (
-            <TouchableOpacity
-              onPress={handleGoBack}
-              style={{ marginRight: 16 }}
-            >
-              <ArrowLeft size={24} color={textColor} />
-            </TouchableOpacity>
-          )}
           <Text
             variant="title"
             style={{
-              fontSize: 20,
+              fontSize: 25,
               fontWeight: "bold",
               color: textColor,
             }}
@@ -209,8 +183,6 @@ const CreateItemForm = ({
         <View
           style={{ padding: 10, flexDirection: "column", gap: 10, flex: 1 }}
         >
-          <Separator style={{ marginVertical: 15 }} />
-
           <Controller
             control={control}
             name="itemName"
@@ -232,61 +204,6 @@ const CreateItemForm = ({
               </>
             )}
           />
-
-          <View style={{ flexDirection: "column", gap: 10 }}>
-            <Controller
-              control={control}
-              name="purchasePrice"
-              render={({ field }) => (
-                <>
-                  <Input
-                    variant="outline"
-                    label="Purchase price"
-                    placeholder="1000 ETB"
-                    value={field.value.toString()}
-                    onChangeText={(text) => {
-                      text=text.replace(/[^0-9]/g, "");
-                      field.onChange(Number(text));
-                    }}
-                    keyboardType="numeric"
-                    error={!!errors.purchasePrice}
-                  />
-                  {errors.purchasePrice && (
-                    <Text style={{ color: "red", marginTop: -5 }}>
-                      {errors.purchasePrice.message}
-                    </Text>
-                  )}
-                </>
-              )}
-            />
-
-            <Controller
-              control={control}
-              name="sellingPrice"
-              render={({ field }) => (
-                <>
-                  <Input
-                    variant="outline"
-                    label="Estimated Selling price"
-                    placeholder="1500 ETB"
-                    value={field.value.toString()}
-                    onChangeText={(text) => {
-                      text=text.replace(/[^0-9]/g, "");
-                      field.onChange(Number(text));
-                    }}
-                    keyboardType="numeric"
-                    error={!!errors.sellingPrice}
-                  />
-                  {errors.sellingPrice && (
-                    <Text style={{ color: "red", marginTop: -5 }}>
-                      {errors.sellingPrice.message}
-                    </Text>
-                  )}
-                </>
-              )}
-            />
-          </View>
-
           <Controller
             control={control}
             name="measure"

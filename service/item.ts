@@ -9,7 +9,8 @@ export const getAllItems = async (
     .from("items")
     .select("*")
     .eq("business_id", businessId)
-    .eq("is_deleted", false);
+    .eq("is_deleted", false)
+    .order("created_at", { ascending: false });
 
   if (filter && filter !== "All" && filter.trim() !== "") {
     query = query.eq("measure", filter);
@@ -70,9 +71,8 @@ export type createItemType = {
   id?: number;
   description: string;
   item_name: string;
-  purchase_price: number;
-  projected_selling_price: number;
   measure: string;
+  business_id: number;
 };
 
 export const checkItemExistence = async (itemId: number) => {

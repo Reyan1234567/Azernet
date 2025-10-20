@@ -129,12 +129,10 @@ const CreatePurchaseOrSale = () => {
       } else {
         await sell(
           formData.item,
-          formData.partner || 0,
-          formData.numberOfItems,
+          formData.partner,
           formData.price,
-          formData.unpaidAmount,
-          false,
-          false
+          formData.numberOfItems,
+          formData.unpaidAmount
         );
         toast({
           title: "Sale record created successfully",
@@ -145,12 +143,17 @@ const CreatePurchaseOrSale = () => {
 
       router.back();
     } catch (e) {
-      toast({
-        title: isPurchase
-          ? "Failed To Record Purchase"
-          : "Failed To Record Sale",
-        variant: "error",
-      });
+      if (e instanceof Error) {
+        toast({
+          title: e.message,
+          variant: "error",
+        });
+      } else {
+        toast({
+          title: "An unknown error occurred.",
+          variant: "error",
+        });
+      }
     }
   };
 

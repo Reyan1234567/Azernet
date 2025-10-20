@@ -18,7 +18,7 @@ const TopBar = () => {
           flexDirection: "row",
           justifyContent: "space-between",
           padding: 20,
-          paddingTop:25
+          paddingTop:30
         //   paddingVertical:20
         }}
       >

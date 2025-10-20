@@ -41,24 +41,27 @@ export default function RootLayout() {
               />
               <Stack.Screen
                 name="editPartner/[id]"
-                options={{ headerTitle: "", headerShown: false }}
+                options={{ headerTitle: "", }}
               />
               <Stack.Screen
                 name="editItem/[id]"
-                options={{ headerTitle: "", headerShown: false }}
+                options={{ headerTitle: "", }}
               />
               <Stack.Screen name="fund" options={{ headerTitle: "" }} />
               <Stack.Screen
                 name="createPurchaseOrSale"
                 options={{ headerTitle: "" }}
               />
+              <Stack.Screen name="createOrder" options={{ headerTitle: "" }} />
+              <Stack.Screen name="withdraw" options={{ headerTitle: "" }} />
               <Stack.Screen
-                name="createOrder"
+                name="purchaseOrder/[id]"
                 options={{ headerTitle: "" }}
               />
-              <Stack.Screen name="withdraw" options={{ headerTitle: "" }} />
-              <Stack.Screen name="purchaseOrder/[id]" options={{ headerTitle: "" }} />
-              <Stack.Screen name="saleOrder/[id]" options={{ headerTitle: "" }} />
+              <Stack.Screen
+                name="saleOrder/[id]"
+                options={{ headerTitle: "" }}
+              />
 
               <Stack.Screen name="+not-found" />
             </Stack>

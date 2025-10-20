@@ -19,7 +19,6 @@ export const reversePurchase = async (id: number) => {
     .eq("id", purchase.item_id)
     .single();
   console.log(business);
-  //reversepurchase(businessid, isdeleted, itemid, linetotal, numberofitems, partnerid, priceperitem, purchaseid, unpaidamount)
   let { error } = await supabase.rpc("reversepurchase", {
     businessid: business.data?.business_id,
     isdeleted: true,
@@ -33,6 +32,8 @@ export const reversePurchase = async (id: number) => {
   });
   if (error) throw new Error(error.message);
 };
+
+
 
 export const reverseSale = async (id: number) => {
   const saleExists = await supabase

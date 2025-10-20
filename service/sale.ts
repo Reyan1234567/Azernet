@@ -7,14 +7,13 @@ import { checkPartnerExistence } from "./partners";
 
 export const sell = async (
   itemId: number,
-  partnerId: number,
+  partnerId: number | undefined,
   pricePerItem: number,
   numberOfItems: number,
-  unpaidAmount: number,
+  unpaidAmount: number
 ) => {
   if (
     !itemId ||
-    !partnerId ||
     !pricePerItem ||
     !numberOfItems ||
     typeof unpaidAmount !== "number"
@@ -23,10 +22,11 @@ export const sell = async (
       "Some values necessary to create a purchase are not present!"
     );
   }
-  console.log(`Number of items: ${numberOfItems}`)
+  console.log(`Number of items: ${numberOfItems}`);
   //Item existence check
   const item_id = await checkItemExistence(itemId);
   //Partner existence check
+  if(partnerId)
   await checkPartnerExistence(partnerId);
   //calculate line_total
   const lineTotal = pricePerItem * numberOfItems;
@@ -41,20 +41,20 @@ export const sell = async (
   const left = Number(amountLeft[0].total_item);
   console.log(`left: ${left}`);
   if (left - numberOfItems < 0) {
-    console.log(`Not enough Items, only ${left} are present`)
+    console.log(`Not enough Items, only ${left} are present`);
     throw new Error(`Not enough Items, only ${left} are present`);
   }
 
   let { data, error } = await supabase.rpc("sell", {
-    businessid:businessId, 
-    isdeleted:false, 
-    itemid:itemId, 
-    linetotal:lineTotal, 
-    numberofitems:numberOfItems, 
-    partnerid:partnerId, 
-    priceperitem:pricePerItem, 
-    reversal:false, 
-    unpaidamount:unpaidAmount
+    businessid: businessId,
+    isdeleted: false,
+    itemid: itemId,
+    linetotal: lineTotal,
+    numberofitems: numberOfItems,
+    partnerid: partnerId,
+    priceperitem: pricePerItem,
+    reversal: false,
+    unpaidamount: unpaidAmount,
   });
   if (error) throw new Error(error?.message ?? "Something went wrong");
   else return data;

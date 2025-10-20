@@ -1,4 +1,8 @@
 import { supabase } from "@/lib/supabase";
+import type { Database } from '../types/supabase'
+
+export type partner = Database['public']['Tables']['partners']
+
 
 type Partner = {
   id: string;

@@ -7,10 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useColor } from "@/hooks/useColor";
 import { useToast } from "@/components/ui/toast";
 import * as z from "zod";
-import {
-  Controller,
-  useForm,
-} from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createDeposit } from "@/service/business_cash";
 import { router } from "expo-router";
@@ -59,9 +56,10 @@ const Fund = () => {
           e?.message ?? "Something went wrong while processing your deposit.",
         variant: "error",
       });
-      console.log(e)
+      console.log(e);
     }
   };
+
   return (
     <View style={{ padding: 10, flexDirection: "column", gap: 15 }}>
       <Text variant="title" style={{ color: textColor, textAlign: "center" }}>
@@ -80,6 +78,7 @@ const Fund = () => {
       <Separator />
       <Controller
         control={control}
+        name="amount"
         render={({ field }) => (
           <Input
             label="Amount"
@@ -92,7 +91,6 @@ const Fund = () => {
             error={!!errors.amount}
           />
         )}
-        name={"amount"}
       />
       {errors.amount && (
         <Text style={{ color: red, marginLeft: 10 }}>
@@ -101,6 +99,7 @@ const Fund = () => {
       )}
       <Controller
         control={control}
+        name="description"
         render={({ field }) => (
           <Input
             label="Descirption"
@@ -110,7 +109,6 @@ const Fund = () => {
             error={!!errors.description}
           />
         )}
-        name={"description"}
       />
       {errors.description && (
         <Text style={{ color: red, marginLeft: 10 }}>

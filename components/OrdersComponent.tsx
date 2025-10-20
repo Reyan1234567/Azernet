@@ -13,7 +13,6 @@ import { Spinner } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
 import {
-  changeOrderStatus,
   changeStatus,
   deleteOrder,
   getAllOrders,
@@ -22,7 +21,6 @@ import OrderPendingCard from "./OrderPendingCard";
 import OrderPurchasedCard from "./OrderPurchasedCard";
 import OrderDeliveredCard from "./OrderDeliveredCard";
 import { ORDERSTATUS } from "@/constants";
-import { reverseSale } from "@/service/reversals";
 
 const OrdersComponent = () => {
   const { toast } = useToast();

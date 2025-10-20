@@ -113,7 +113,7 @@ const Business = () => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <TopBar />
       <ScrollView>
         <Text variant="title" style={{ color: textColor, padding: 20 }}>
@@ -243,7 +243,7 @@ const Business = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

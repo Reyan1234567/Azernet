@@ -13,6 +13,7 @@ import {
   createPartner,
   editPartner,
   getSinglePartner,
+  partner
 } from "@/service/partners";
 import { useToast } from "@/components/ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -64,8 +65,8 @@ const PartnerForm = () => {
 
   const { toast } = useToast();
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["partner", partnerId],
+  const { data, isLoading, isError, error } = useQuery<partner, Error>({
+    queryKey: ["partners", partnerId],
     queryFn: async() => await getSinglePartner(Number(partnerId)),
     enabled: isEditMode && !!partnerId && partnerId !== "new",
     staleTime:0,
@@ -78,7 +79,7 @@ const PartnerForm = () => {
         firstname: data.first_name,
         lastname: data.last_name,
         phone_number: data.phone_number,
-        role: data.role,
+        role: data.role.substring(0, 1).toUpperCase() + data.role.substring(1),
       });
     }
   }, [isEditMode, data, reset]);
@@ -182,13 +183,10 @@ const PartnerForm = () => {
             paddingBottom: 0,
           }}
         >
-          <TouchableOpacity onPress={handleGoBack} style={{ marginRight: 16 }}>
-            <ArrowLeft size={24} color={textColor} />
-          </TouchableOpacity>
           <Text
             variant="title"
             style={{
-              fontSize: 20,
+              fontSize: 25,
               fontWeight: "bold",
               color: textColor,
             }}
@@ -200,8 +198,6 @@ const PartnerForm = () => {
         <View
           style={{ padding: 10, flexDirection: "column", gap: 10, flex: 1 }}
         >
-          <Separator style={{ marginVertical: 15 }} />
-
           <Controller
             control={control}
             name="firstname"
@@ -287,12 +283,8 @@ const PartnerForm = () => {
             )}
           />
 
-          <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
-            {isSubmitting
-              ? isEditMode
-                ? "Updating..."
-                : "Creating..."
-              : isEditMode
+          <Button onPress={handleSubmit(onSubmit)} loading={isSubmitting}>
+            { isEditMode
               ? "Update Partner"
               : "Create Partner"}
           </Button>

@@ -130,7 +130,7 @@ const Index = () => {
         </Text>
         <View style={styles.actions}>
           <Button 
-            onPress={() => router.push("/editItemTransaction/new")}
+            onPress={() => router.push("/createItem")}
             style={{ flex: 1 }}
           >
             New Transaction
@@ -145,7 +145,7 @@ const Index = () => {
         </View>
         <View style={styles.actions}>
           <Button 
-            onPress={() => router.push("/editOrder/new")}
+            onPress={() => router.push("/createOrder")}
             variant="outline"
             style={{ flex: 1 }}
           >

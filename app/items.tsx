@@ -15,12 +15,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { deleteItem, getAllItems } from "@/service/item";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
+import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
 
 const Items = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [modalId, setModalId] = useState(0);
+  const dialog = useAlertDialog();
   const debouncedSearchTerm = useDebounce(search, 300);
 
   const bgColor = useColor("background");
@@ -40,13 +43,27 @@ const Items = () => {
     router.push(`/editItem/${itemId}`);
   };
 
-  const handleDeleteItem = async (itemId: string) => {
-    await deleteItem(Number(itemId));
-    queryClient.invalidateQueries({ queryKey: ["items"] });
-    toast({
-      title: "Deletion successful",
-      variant: "success",
-    });
+  const handleDeleteItem = (itemId: string) => {
+    setModalId(Number(itemId));
+    dialog.open();
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteItem(modalId);
+      queryClient.invalidateQueries({ queryKey: ["items"] });
+      toast({
+        title: "Deletion successful",
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: "Error deleting item",
+        description: "Something went wrong",
+        variant: "error",
+      });
+    }
+    dialog.close();
   };
 
   // Centralized header component
@@ -172,29 +189,7 @@ const Items = () => {
                 sellingPrice: parseFloat(item.projected_selling_price),
               }}
               onEdit={() => handleEditItem(item.id)}
-              onDelete={() => {
-                toast({
-                  title: `Are you sure you want to delete ${item.item_name}`,
-                  duration:10000,
-                  description:
-                    "The item record will still be kept but won't appear in your lists",
-                  variant: "warning",
-                  action: {
-                    label: "Delete",
-                    onPress: async () => {
-                      try {
-                        await handleDeleteItem(item.id);
-                      } catch (error) {
-                        toast({
-                          title: "Error deleting item",
-                          description: "Something went wrong",
-                          variant: "error",
-                        })
-                      }
-                    },
-                  },
-                });
-              }}
+              onDelete={() => handleDeleteItem(item.id)}
             />
           )}
         />
@@ -231,6 +226,16 @@ const Items = () => {
           />
         </View>
       </View>
+      <AlertDialog
+        isVisible={dialog.isVisible}
+        onClose={dialog.close}
+        title="Are you sure you want to delete this item?"
+        description="The item record will still be kept but won't appear in your lists."
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={dialog.close}
+      />
     </SafeAreaView>
   );
 };

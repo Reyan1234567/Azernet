@@ -15,12 +15,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { deletePartner, getPartners } from "@/service/partners";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
+import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
 
 const Partners = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [modalId, setModalId] = useState(0);
+  const dialog = useAlertDialog();
   const debouncedSearchTerm = useDebounce(search, 300);
 
   const bgColor = useColor("background");
@@ -41,13 +44,27 @@ const Partners = () => {
     router.push(`/editPartner/${partnerId}`);
   };
 
-  const handleDeletePartner = async (partnerId: string) => {
-    await deletePartner(Number(partnerId));
-    queryClient.invalidateQueries({ queryKey: ["partners"] });
-    toast({
-      title: "Deletion successful",
-      variant: "success",
-    });
+  const handleDeletePartner = (partnerId: string) => {
+    setModalId(Number(partnerId));
+    dialog.open();
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deletePartner(modalId);
+      queryClient.invalidateQueries({ queryKey: ["partners"] });
+      toast({
+        title: "Deletion successful",
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: "Error deleting partner",
+        description: "Something went wrong",
+        variant: "error",
+      });
+    }
+    dialog.close();
   };
 
   const renderHeader = () => (
@@ -170,21 +187,7 @@ const Partners = () => {
               <PartnerCard
                 partner={item}
                 onEdit={() => handleEditPartner(item.id)}
-                onDelete={() => {
-                  toast({
-                    title: `Are you sure you want to delete ${item.first_name}`,
-                    description:
-                      "Their record will still be kept but won't appear as customer in your lists",
-                    duration: 3000,
-                    variant: "warning",
-                    action: {
-                      label: "Delete",
-                      onPress: () => {
-                        handleDeletePartner(item.id);
-                      },
-                    },
-                  });
-                }}
+                onDelete={() => handleDeletePartner(item.id)}
               />
             )}
           />
@@ -222,6 +225,16 @@ const Partners = () => {
           />
         </View>
       </View>
+      <AlertDialog
+        isVisible={dialog.isVisible}
+        onClose={dialog.close}
+        title="Are you sure you want to delete this partner?"
+        description="Their record will still be kept but won't appear in your lists."
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={dialog.close}
+      />
     </SafeAreaView>
   );
 };

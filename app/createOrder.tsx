@@ -227,7 +227,7 @@ const CreateOrder = () => {
                     field.onChange(Number(option?.value));
                   }}
                 >
-                  <ComboboxTrigger error={errors.partner}>
+                  <ComboboxTrigger error={!!errors.partner}>
                     <ComboboxValue placeholder="Select partner (Optional)..." />
                   </ComboboxTrigger>
                   <ComboboxContent>
@@ -276,7 +276,7 @@ const CreateOrder = () => {
                     field.onChange(Number(option?.value));
                   }}
                 >
-                  <ComboboxTrigger error={errors.item}>
+                  <ComboboxTrigger error={!!errors.item}>
                     <ComboboxValue placeholder="Select item..." />
                   </ComboboxTrigger>
                   <ComboboxContent>
