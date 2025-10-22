@@ -212,3 +212,16 @@ export const deleteOrder = async (id: number) => {
   }
   return data;
 };
+
+export const getNumberOfItems = async (id: number) => {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("number_of_items")
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    return;
+  }
+  return data;
+};

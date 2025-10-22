@@ -31,23 +31,35 @@ import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { purchase } from "@/service/purchase";
 import { sell } from "@/service/sale";
 
-const formSchema = z.object({
-  item: z
-    .number({ required_error: "Item must be a number" })
-    .min(1, "Choose a valid item"),
-  partner: z.number({ required_error: "Type must be a number" }).optional(),
-  numberOfItems: z
-    .number({ required_error: "Type must be a number" })
-    .min(1, "Fill in a valid number of Items"),
-  price: z
-    .number({ required_error: "Type must be a number" })
-    .min(1, "Fill in a valid price"),
-  unpaidAmount: z.number({ required_error: "Type must be a number" }),
-});
-
-type FormData = z.infer<typeof formSchema>;
-
 const CreatePurchaseOrSale = () => {
+  const [numberOfItems, setNumberOfItems] = useState(0);
+  const [price, setPrice] = useState(0);
+  const zero = 0;
+
+  const lineTotal =
+    numberOfItems && price
+      ? (numberOfItems * price).toFixed(2)
+      : zero.toFixed(2);
+  const formSchema = z
+    .object({
+      item: z
+        .number({ required_error: "Item must be a number" })
+        .min(1, "Choose a valid item"),
+      partner: z.number({ required_error: "Type must be a number" }).optional(),
+      numberOfItems: z
+        .number({ required_error: "Type must be a number" })
+        .min(1, "Fill in a valid number of Items"),
+      price: z
+        .number({ required_error: "Type must be a number" })
+        .min(1, "Fill in a valid price"),
+      unpaidAmount: z.number({ required_error: "Type must be a number" }),
+    })
+    .refine((data) => data.unpaidAmount <= Number(lineTotal), {
+      message: "Unpaid amount can't be greater than the Line Total",
+      path: ["unpaidAmount"],
+    });
+
+  type FormData = z.infer<typeof formSchema>;
   const { toast } = useToast();
   const params = useLocalSearchParams();
   const queryClient = useQueryClient();
@@ -82,8 +94,6 @@ const CreatePurchaseOrSale = () => {
     useState(false);
   const [itemComboboxKey, setItemComboboxKey] = useState(0);
   const [partnerComboboxKey, setPartnerComboboxKey] = useState(0);
-  const [numberOfItems, setNumberOfItems] = useState(0);
-  const [price, setPrice] = useState(0);
 
   // One unified useQuery to fetch all data
   const { data, isLoading, isError, error } = useQuery({
@@ -108,8 +118,6 @@ const CreatePurchaseOrSale = () => {
   };
 
   const secondaryBg = useColor("card");
-  const lineTotal =
-    numberOfItems && price ? (numberOfItems * price).toFixed(2) : "0.00";
 
   const onSubmit = async (formData: FormData) => {
     try {
@@ -360,6 +368,7 @@ const CreatePurchaseOrSale = () => {
                     field.onChange(Number(text));
                   }}
                   keyboardType="numeric"
+                  error={errors.unpaidAmount?.message}
                 />
               )}
             />

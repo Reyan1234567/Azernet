@@ -20,20 +20,11 @@ import {
   ComboboxValue,
   OptionType,
 } from "./ui/combobox";
-import { changeStatus } from "@/service/orders";
-import { ORDERSTATUS } from "@/constants";
+import { changeStatus, getNumberOfItems } from "@/service/orders";
+import { bigNumber, ORDERSTATUS } from "@/constants";
 import { router } from "expo-router";
 import { useColor } from "@/hooks/useColor";
-import { Separator } from "./ui/separator";
 import { Spinner } from "./ui/spinner";
-
-const purchaseFormSchema = z.object({
-  supplierId: z.number().min(1, "Please select a supplier"),
-  pricePerItemP: z.number().min(0.01, "Price must be greater than 0"),
-  unpaidAmountP: z.number().min(0, "Unpaid amount cannot be negative"),
-});
-
-type PurchaseFormData = z.infer<typeof purchaseFormSchema>;
 
 interface PurchaseFormComponentProps {
   id: number;
@@ -42,12 +33,41 @@ interface PurchaseFormComponentProps {
 const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
   id,
 }) => {
+  const { data: numberOfItems } = useQuery({
+    queryKey: ["numberOfItems", id],
+    queryFn: async () => {
+      const numberOfItems = await getNumberOfItems(id);
+      return numberOfItems;
+    },
+  });
+
+  const purchaseFormSchema = z
+    .object({
+      supplierId: z.number().min(1, "Please select a supplier"),
+      pricePerItemP: z.number().min(0.01, "Price must be greater than 0"),
+      unpaidAmountP: z.number().min(0, "Unpaid amount cannot be negative"),
+    })
+    .refine(
+      (data) =>
+        numberOfItems?.number_of_items
+          ? data.unpaidAmountP <=
+            numberOfItems?.number_of_items * data.pricePerItemP
+          : data.unpaidAmountP <= bigNumber,
+      {
+        message:
+          "Unpaid amount can't be greater than the total amount to be paid",
+        path: ["unpaidAmountP"],
+      }
+    );
+
+  type PurchaseFormData = z.infer<typeof purchaseFormSchema>;
+
   const { toast } = useToast();
-  const textColor=useColor("text")
-  const primary=useColor("primary")
+  const textColor = useColor("text");
+  const primary = useColor("primary");
   const [quantity, setQuantity] = useState(0);
   const [pricePerItem, setPricePerItem] = useState(0);
-  
+
   const queryClient = useQueryClient();
   const {
     control,
@@ -62,7 +82,8 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
     },
   });
 
-  const [selectedSupplier, setSelectedSupplier] = React.useState<OptionType | null>(null);
+  const [selectedSupplier, setSelectedSupplier] =
+    React.useState<OptionType | null>(null);
 
   // Fetch suppliers
   const {
@@ -91,7 +112,7 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
         variant: "success",
       });
       queryClient.invalidateQueries({
-        queryKey: ["orders"]
+        queryKey: ["orders", "purchases", "sales"],
       });
       router.back();
     } catch (error: any) {
@@ -103,26 +124,36 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
     }
   };
 
-  // Show loading spinner while data is being fetched
   if (suppliersLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center"}}>
-        <Spinner/>
-        <Text style={{ marginTop: 16, color: textColor}}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Spinner />
+        <Text style={{ marginTop: 16, color: textColor }}>
           Loading suppliers...
         </Text>
       </View>
     );
   }
 
-  // Show error state if fetching failed
   if (suppliersError) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 20,
+        }}
+      >
         <Text style={{ color: "red", textAlign: "center" }}>
           Error loading suppliers: {suppliersError.message}
         </Text>
-        <Button onPress={() => queryClient.refetchQueries({ queryKey: ["suppliers-purchase"] })} style={{ marginTop: 16 }}>
+        <Button
+          onPress={() =>
+            queryClient.refetchQueries({ queryKey: ["suppliers-purchase"] })
+          }
+          style={{ marginTop: 16 }}
+        >
           Retry
         </Button>
       </View>
@@ -132,7 +163,7 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
   // Render the actual form only when data is available
   return (
     <View style={{ gap: 20, padding: 16 }}>
-      <Text variant="heading" style={{ color: textColor}}>
+      <Text variant="heading" style={{ color: textColor }}>
         Place a Purchase
       </Text>
 
@@ -218,14 +249,9 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
             }}
             keyboardType="numeric"
             error={errors.unpaidAmountP?.message}
-          />  
+          />
         )}
       />
-      <Separator/>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", margin: 5, marginTop: 10 }}>
-        <Text variant="caption" style={{ color: textColor}}>LINE TOTAL: </Text>
-        <Text variant="caption" style={{ color: textColor}}>{quantity * pricePerItem}</Text>
-      </View>
       <View style={{ flexDirection: "row", gap: 12, marginTop: 10 }}>
         <Button
           onPress={handleSubmit(onSubmit)}

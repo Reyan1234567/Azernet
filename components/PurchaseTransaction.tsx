@@ -11,7 +11,7 @@ import PurchaseCard from "./PurchaseCard";
 import { Plus } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 import { router } from "expo-router";
-import { Spinner } from "./ui/spinner";
+import { Spinner, LoadingOverlay } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
 import { reversePurchase } from "@/service/reversals";
@@ -25,6 +25,7 @@ const PurchaseTransaction = () => {
   const textColor = useColor("text");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [loading, setLoading] = useState(false);
   const dialog = useAlertDialog();
   const [modalId, setModalId]=useState(0)
 
@@ -36,6 +37,7 @@ const PurchaseTransaction = () => {
   });
 
   const handleReverseTransaction = async (transactionId: number) => {
+    setLoading(true);
     try {
       await reversePurchase(transactionId);
       queryClient.invalidateQueries({ queryKey: ["purchaseTransactions"] });
@@ -43,12 +45,15 @@ const PurchaseTransaction = () => {
         title: "Purchase reversed successfully",
         variant: "success",
       });
+      dialog.close();
     } catch (error: any) {
       toast({
         title: "Failed to reverse purchase",
         description: error.message ?? "Something went wrong",
         variant: "error",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -190,9 +195,19 @@ const PurchaseTransaction = () => {
         description='This action cannot be undone.'
         confirmText='Yes, Reverse'
         cancelText='Cancel'
-        onConfirm={() => {handleReverseTransaction(modalId)
+        onConfirm={() => {
+          setLoading(true);
+          handleReverseTransaction(modalId);
         }}
         onCancel={dialog.close}
+      />
+      <LoadingOverlay
+        visible={loading}
+        size='lg'
+        variant='cirlce'
+        label='Processing...'
+        backdrop={true}
+        backdropOpacity={0.7}
       />
     </View>
   );

@@ -9,7 +9,7 @@ import SalesCard from "./SalesCard";
 import { Plus } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 import { router } from "expo-router";
-import { Spinner } from "./ui/spinner";
+import { Spinner, LoadingOverlay } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
 import { reverseSale } from "@/service/reversals";
@@ -22,6 +22,7 @@ const SalesTransaction = () => {
   const red = useColor("red");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [loading, setLoading] = useState(false);
   const [modalId, setModalId] = useState(0);
   const dialog = useAlertDialog();
   const filters = ["All", "Paid", "Unpaid"];
@@ -33,6 +34,7 @@ const SalesTransaction = () => {
   });
 
   const handleReverseTransaction = async (transactionId: number) => {
+    setLoading(true);
     try {
       await reverseSale(transactionId);
       queryClient.invalidateQueries({ queryKey: ["salesTransactions"] });
@@ -40,12 +42,15 @@ const SalesTransaction = () => {
         title: "Sale reversed successfully",
         variant: "success",
       });
+      dialog.close();
     } catch (error: any) {
       toast({
         title: "Failed to reverse sale",
         description: error.message ?? "Something went wrong",
         variant: "error",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -188,9 +193,18 @@ const SalesTransaction = () => {
         confirmText="Yes, Reverse"
         cancelText="Cancel"
         onConfirm={() => {
+          setLoading(true);
           handleReverseTransaction(modalId);
         }}
         onCancel={dialog.close}
+      />
+      <LoadingOverlay
+        visible={loading}
+        size='lg'
+        variant='cirlce'
+        label='Processing...'
+        backdrop={true}
+        backdropOpacity={0.7}
       />
     </View>
   );

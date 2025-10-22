@@ -13,7 +13,7 @@ import PartnerCard from "@/components/PartnerCard";
 import { Text } from "@/components/ui/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { deletePartner, getPartners } from "@/service/partners";
-import { Spinner } from "@/components/ui/spinner";
+import { Spinner, LoadingOverlay } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
 
@@ -22,6 +22,7 @@ const Partners = () => {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
   const [modalId, setModalId] = useState(0);
   const dialog = useAlertDialog();
   const debouncedSearchTerm = useDebounce(search, 300);
@@ -50,6 +51,7 @@ const Partners = () => {
   };
 
   const confirmDelete = async () => {
+    setLoading(true);
     try {
       await deletePartner(modalId);
       queryClient.invalidateQueries({ queryKey: ["partners"] });
@@ -57,14 +59,16 @@ const Partners = () => {
         title: "Deletion successful",
         variant: "success",
       });
+      dialog.close();
     } catch (error) {
       toast({
         title: "Error deleting partner",
         description: "Something went wrong",
         variant: "error",
       });
+    } finally {
+      setLoading(false);
     }
-    dialog.close();
   };
 
   const renderHeader = () => (
@@ -232,8 +236,19 @@ const Partners = () => {
         description="Their record will still be kept but won't appear in your lists."
         confirmText="Yes, Delete"
         cancelText="Cancel"
-        onConfirm={confirmDelete}
+        onConfirm={() => {
+          setLoading(true);
+          confirmDelete();
+        }}
         onCancel={dialog.close}
+      />
+      <LoadingOverlay
+        visible={loading}
+        size='lg'
+        variant='cirlce'
+        label='Processing...'
+        backdrop={true}
+        backdropOpacity={0.7}
       />
     </SafeAreaView>
   );

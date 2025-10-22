@@ -111,7 +111,7 @@ const CreateOrder = () => {
         title: "Order created successfully",
         variant: "success",
       });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders", "purchases", "sales"] });
       router.back();
     } catch (e) {
       toast({

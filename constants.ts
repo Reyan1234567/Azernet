@@ -16,3 +16,5 @@ export enum ORDERSTATUS {
   PURCHASED = "purchased",
   DELIVERED = "delivered",
 }
+
+export const bigNumber=9999999999999;

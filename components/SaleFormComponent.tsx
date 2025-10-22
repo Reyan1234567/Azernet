@@ -7,26 +7,44 @@ import { useToast } from "./ui/toast";
 import { Button } from "./ui/button";
 import { Text } from "./ui/text";
 import { Input } from "./ui/input";
-import { changeStatus } from "@/service/orders";
-import { ORDERSTATUS } from "@/constants";
+import { changeStatus, getNumberOfItems } from "@/service/orders";
+import { bigNumber, ORDERSTATUS } from "@/constants";
 import { useColor } from "@/hooks/useColor";
 import { Separator } from "./ui/separator";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-
-const saleFormSchema = z.object({
-  pricePerItemS: z.number().min(0.01, "Price must be greater than 0"),
-  unpaidAmountS: z.number().min(0, "Unpaid amount cannot be negative"),
-});
-
-type SaleFormData = z.infer<typeof saleFormSchema>;
 
 interface SaleFormComponentProps {
   id: number;
 }
 
 const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
-  const queryClient=useQueryClient()
+  const { data: numberOfItems } = useQuery({
+    queryKey: ["numberOfItems", id],
+    queryFn: () => getNumberOfItems(id),
+  });
+
+  const saleFormSchema = z
+    .object({
+      pricePerItemS: z.number().min(0.01, "Price must be greater than 0"),
+      unpaidAmountS: z.number().min(0, "Unpaid amount cannot be negative"),
+    })
+    .refine(
+      (data) =>
+        numberOfItems?.number_of_items
+          ? data.unpaidAmountS <=
+            numberOfItems?.number_of_items * data.pricePerItemS
+          : data.unpaidAmountS <= bigNumber,
+      {
+        message:
+          "Unpaid amount can't be greater than the total amount to be paid",
+        path: ["unpaidAmountS"],
+      }
+    );
+
+  type SaleFormData = z.infer<typeof saleFormSchema>;
+
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(0);
   const [pricePerItem, setPricePerItem] = useState(0);
@@ -55,15 +73,17 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
         title: "Sale data submitted successfully",
         variant: "success",
       });
-      queryClient.invalidateQueries({queryKey:["orders", "purchases", "sales"]})
-      router.back()
+      queryClient.invalidateQueries({
+        queryKey: ["orders", "purchases", "sales"],
+      });
+      router.back();
     } catch (error: any) {
       toast({
         title: "Failed to submit sale data",
         description: error.message ?? "Something went wrong",
         variant: "error",
       });
-      router.back()
+      router.back();
     }
   };
 
@@ -97,11 +117,6 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
           />
         )}
       />
-      {errors.pricePerItemS && (
-        <Text style={{ color: destructive, fontSize: 14 }}>
-          {errors.pricePerItemS.message}
-        </Text>
-      )}
 
       <Controller
         control={control}
@@ -121,11 +136,6 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
           />
         )}
       />
-      {errors.unpaidAmountS && (
-        <Text style={{ color: destructive, fontSize: 14 }}>
-          {errors.unpaidAmountS.message}
-        </Text>
-      )}
       <View style={{ flexDirection: "row", gap: 12, marginTop: 10 }}>
         <Button
           onPress={handleSubmit(onSubmit)}

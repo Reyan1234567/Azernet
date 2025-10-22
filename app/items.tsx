@@ -13,7 +13,7 @@ import ItemCard from "@/components/ItemCard";
 import { Text } from "@/components/ui/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { deleteItem, getAllItems } from "@/service/item";
-import { Spinner } from "@/components/ui/spinner";
+import { Spinner, LoadingOverlay } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
 
@@ -22,6 +22,7 @@ const Items = () => {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
   const [modalId, setModalId] = useState(0);
   const dialog = useAlertDialog();
   const debouncedSearchTerm = useDebounce(search, 300);
@@ -49,6 +50,7 @@ const Items = () => {
   };
 
   const confirmDelete = async () => {
+    setLoading(true);
     try {
       await deleteItem(modalId);
       queryClient.invalidateQueries({ queryKey: ["items"] });
@@ -56,14 +58,16 @@ const Items = () => {
         title: "Deletion successful",
         variant: "success",
       });
+      dialog.close();
     } catch (error) {
       toast({
         title: "Error deleting item",
         description: "Something went wrong",
         variant: "error",
       });
+    } finally {
+      setLoading(false);
     }
-    dialog.close();
   };
 
   // Centralized header component
@@ -233,8 +237,19 @@ const Items = () => {
         description="The item record will still be kept but won't appear in your lists."
         confirmText="Yes, Delete"
         cancelText="Cancel"
-        onConfirm={confirmDelete}
+        onConfirm={() => {
+          setLoading(true);
+          confirmDelete();
+        }}
         onCancel={dialog.close}
+      />
+      <LoadingOverlay
+        visible={loading}
+        size='lg'
+        variant='cirlce'
+        label='Processing...'
+        backdrop={true}
+        backdropOpacity={0.7}
       />
     </SafeAreaView>
   );

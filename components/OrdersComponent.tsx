@@ -9,7 +9,7 @@ import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
 import { Plus } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 import { router } from "expo-router";
-import { Spinner } from "./ui/spinner";
+import { Spinner, LoadingOverlay } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
 import {
@@ -32,37 +32,46 @@ const OrdersComponent = () => {
   const red = useColor("red");
 
   const handlePurchasedReversal = async () => {
+    setLoading(true);
     try {
       await changeStatus(ORDERSTATUS.PENDING, modalId);
       toast({
         title: "Purchase reversal successful",
         variant: "success",
       });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders", "purchases", "sales"] });
+      reverseToPending.close();
     } catch (e) {
       toast({
         title: "Failed to reverse purchase",
         variant: "error",
       });
+    } finally {
+      setLoading(false);
     }
   };
   const handleDeliveredReversal = async () => {
+    setLoading(true);
     try {
       await changeStatus(ORDERSTATUS.PURCHASED, modalId);
       toast({
         title: "Delivered reversal successful",
         variant: "success",
       });
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders", "purchases", "sales"] });
+      reverseToPurchased.close();
     } catch (e) {
       toast({
         title: "Failed to reverse delivered status",
         variant: "error",
       });
+    } finally {
+      setLoading(false);
     }
   };
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [loading, setLoading] = useState(false);
   const [modalId, setModalId] = useState(0);
   const filters = ["All", "pending", "purchased", "delivered"];
   const debouncedSearchTerm = useDebounce(search, 300);
@@ -72,19 +81,23 @@ const OrdersComponent = () => {
   });
 
   const handleDeleteOrder = async (orderId: number) => {
+    setLoading(true);
     try {
       await deleteOrder(orderId);
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders", "purchases", "sales"] });
       toast({
         title: "Order deleted successfully",
         variant: "success",
       });
+      dialog.close();
     } catch (error: any) {
       toast({
         title: "Failed to delete order",
         description: error.message ?? "Something went wrong",
         variant: "error",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -259,9 +272,9 @@ const OrdersComponent = () => {
             description="This action cannot be undone."
             confirmText="Yes, delete"
             cancelText="Cancel"
-            onConfirm={async () => {
-              await handleDeleteOrder(modalId);
-              dialog.close();
+            onConfirm={() => {
+              setLoading(true);
+              handleDeleteOrder(modalId);
             }}
             onCancel={dialog.close}
           />
@@ -273,9 +286,9 @@ const OrdersComponent = () => {
             description="This action cannot be undone, and tracks of this won't be seen."
             confirmText="Yes, reverse"
             cancelText="Cancel"
-            onConfirm={async () => {
-              await handlePurchasedReversal()
-              reverseToPending.close();
+            onConfirm={() => {
+              setLoading(true);
+              handlePurchasedReversal();
             }}
             onCancel={reverseToPending.close}
           />
@@ -287,14 +300,22 @@ const OrdersComponent = () => {
             description="This action cannot be undone, and tracks of this won't be seen."
             confirmText="Yes, reverse"
             cancelText="Cancel"
-            onConfirm={async () => {
-              await handleDeliveredReversal();
-              reverseToPurchased.close();
+            onConfirm={() => {
+              setLoading(true);
+              handleDeliveredReversal();
             }}
             onCancel={reverseToPurchased.close}
           />
         </View>
       )}
+      <LoadingOverlay
+        visible={loading}
+        size='lg'
+        variant='cirlce'
+        label='Processing...'
+        backdrop={true}
+        backdropOpacity={0.7}
+      />
     </View>
   );
 };
