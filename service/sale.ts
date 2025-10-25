@@ -59,3 +59,34 @@ export const sell = async (
   if (error) throw new Error(error?.message ?? "Something went wrong");
   else return data;
 };
+
+
+export const subtractUnpaidAmountSales = async (
+  id: number,
+  amountToSubtract: number
+) => {
+  const { data:unpaidAmountData, error } = await supabase
+    .from("sales")
+    .select("unpaid_amount")
+    .eq("id", id)
+    .single();
+  if (error) {
+    throw new Error(
+      "Error happened when getting the sales: related to the unpaidAmount..."
+    );
+  }
+  if (amountToSubtract > unpaidAmountData.unpaid_amount) {
+    throw new Error("Amount to subtract is more than");
+  }
+
+  let { data: rpcData, error: rpcError } = await supabase.rpc(
+    "pay_for_due_sale_payment",
+    {
+      amount:amountToSubtract,
+      _id:id,
+    }
+  );
+  if (rpcError)
+    throw new Error("Error happended when subtracting unpaidAmount");
+  else return rpcData;
+};

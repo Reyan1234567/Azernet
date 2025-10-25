@@ -2,9 +2,7 @@ import { FlatList, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  getAllPurchaseTransactions,
-} from "@/service/transaction";
+import { getAllPurchaseTransactions } from "@/service/transaction";
 import { SearchBar } from "./ui/searchbar";
 import { Button } from "./ui/button";
 import PurchaseCard from "./PurchaseCard";
@@ -16,6 +14,7 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
 import { reversePurchase } from "@/service/reversals";
 import { AlertDialog, useAlertDialog } from "./ui/alert-dialog";
+import { useLocalSearchParams } from "expo-router/build/hooks";
 
 const PurchaseTransaction = () => {
   const { toast } = useToast();
@@ -27,7 +26,7 @@ const PurchaseTransaction = () => {
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(false);
   const dialog = useAlertDialog();
-  const [modalId, setModalId]=useState(0)
+  const [modalId, setModalId] = useState(0);
 
   const filters = ["All", "Paid", "Unpaid"];
   const debouncedSearchTerm = useDebounce(search, 300);
@@ -35,7 +34,7 @@ const PurchaseTransaction = () => {
     queryKey: ["purchaseTransactions", filter, debouncedSearchTerm],
     queryFn: () => getAllPurchaseTransactions(1, search, filter),
   });
-
+  const { id } = useLocalSearchParams();
   const handleReverseTransaction = async (transactionId: number) => {
     setLoading(true);
     try {
@@ -158,9 +157,14 @@ const PurchaseTransaction = () => {
             renderItem={({ item }) => (
               <PurchaseCard
                 handleReverse={() => {
-                  setModalId(item.id)
-                  dialog.open()
+                  setModalId(item.id);
+                  dialog.open();
                 }}
+                handleDebit={() =>
+                  router.push(
+                    `/amountUnpaid?id=${item.id}&debt=${item.unpaid_amount}&type=purchase`
+                  )
+                }
                 transaction={item}
               />
             )}
@@ -191,10 +195,10 @@ const PurchaseTransaction = () => {
       <AlertDialog
         isVisible={dialog.isVisible}
         onClose={dialog.close}
-        title='Are Sure you want to reverse this purchase?'
-        description='This action cannot be undone.'
-        confirmText='Yes, Reverse'
-        cancelText='Cancel'
+        title="Are Sure you want to reverse this purchase?"
+        description="This action cannot be undone."
+        confirmText="Yes, Reverse"
+        cancelText="Cancel"
         onConfirm={() => {
           setLoading(true);
           handleReverseTransaction(modalId);
@@ -203,9 +207,9 @@ const PurchaseTransaction = () => {
       />
       <LoadingOverlay
         visible={loading}
-        size='lg'
-        variant='cirlce'
-        label='Processing...'
+        size="lg"
+        variant="cirlce"
+        label="Processing..."
         backdrop={true}
         backdropOpacity={0.7}
       />

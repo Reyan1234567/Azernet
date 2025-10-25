@@ -12,11 +12,13 @@ import { User, TrendingDown, Recycle } from "lucide-react-native";
 interface PurchaseCardProps {
   transaction: ItemTransactionDisplay;
   handleReverse: () => void;
+  handleDebit: () => void;
 }
 
 const PurchaseCard = ({
   transaction,
   handleReverse,
+  handleDebit,
 }: PurchaseCardProps) => {
   const destructiveColor = useColor("red");
   const textColor = useColor("text");
@@ -68,7 +70,9 @@ const PurchaseCard = ({
       >
         <Icon name={User} size={16} color={mutedColor} />
         <Text variant="caption" style={{ color: mutedColor }}>
-          {`${transaction.first_name ?? ""} ${transaction.last_name ?? ""}`.trim() || "No partner"}
+          {`${transaction.first_name ?? ""} ${
+            transaction.last_name ?? ""
+          }`.trim() || "No partner"}
         </Text>
       </View>
 
@@ -100,13 +104,15 @@ const PurchaseCard = ({
             variant="caption"
             style={{ color: mutedColor, marginBottom: 2 }}
           >
-            Unpaid Amount
+            Debt
           </Text>
           <Text
             variant="body"
             style={{
               color:
-                (transaction.unpaid_amount ?? 0) > 0 ? destructiveColor : mutedColor,
+                (transaction.unpaid_amount ?? 0) > 0
+                  ? destructiveColor
+                  : mutedColor,
               fontWeight: "600",
             }}
           >
@@ -145,6 +151,16 @@ const PurchaseCard = ({
         >
           Reverse
         </Button>
+        {transaction.unpaid_amount > 0 && (
+          <Button
+            size="sm"
+            icon={Recycle}
+            style={{ flex: 1 }}
+            onPress={handleDebit}
+          >
+            Edit Debt
+          </Button>
+        )}
       </View>
     </Card>
   );

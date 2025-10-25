@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
-import type { Database } from '../types/supabase'
+import type { Database } from '../types/database.types'
 
-export type partner = Database['public']['Tables']['partners']
+export type partner = Database['public']['Tables']['partners']['Row']
 
 
 type Partner = {

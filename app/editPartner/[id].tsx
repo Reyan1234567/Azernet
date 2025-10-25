@@ -65,9 +65,9 @@ const PartnerForm = () => {
 
   const { toast } = useToast();
 
-  const { data, isLoading, isError, error } = useQuery<partner, Error>({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["partners", partnerId],
-    queryFn: async() => await getSinglePartner(Number(partnerId)),
+    queryFn: async():Promise<partner> => await getSinglePartner(Number(partnerId)),
     enabled: isEditMode && !!partnerId && partnerId !== "new",
     staleTime:0,
   });

@@ -158,6 +158,11 @@ const SalesTransaction = () => {
                   setModalId(item.id);
                   dialog.open();
                 }}
+                handleDebt={() =>
+                  router.push(
+                    `/amountUnpaid?id=${item.id}&debt=${item.unpaid_amount}&type=sale`
+                  )
+                }
                 transaction={item}
               />
             )}
@@ -200,9 +205,9 @@ const SalesTransaction = () => {
       />
       <LoadingOverlay
         visible={loading}
-        size='lg'
-        variant='cirlce'
-        label='Processing...'
+        size="lg"
+        variant="cirlce"
+        label="Processing..."
         backdrop={true}
         backdropOpacity={0.7}
       />

@@ -41,11 +41,11 @@ export default function RootLayout() {
               />
               <Stack.Screen
                 name="editPartner/[id]"
-                options={{ headerTitle: "", }}
+                options={{ headerTitle: "" }}
               />
               <Stack.Screen
                 name="editItem/[id]"
-                options={{ headerTitle: "", }}
+                options={{ headerTitle: "" }}
               />
               <Stack.Screen name="fund" options={{ headerTitle: "" }} />
               <Stack.Screen
@@ -62,7 +62,10 @@ export default function RootLayout() {
                 name="saleOrder/[id]"
                 options={{ headerTitle: "" }}
               />
-
+              <Stack.Screen
+                name="amountUnpaid"
+                options={{ headerTitle: "" }}
+              />
               <Stack.Screen name="+not-found" />
             </Stack>
             <StatusBar style="auto" />

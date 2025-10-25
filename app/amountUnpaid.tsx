@@ -1,47 +1,79 @@
-import { StyleSheet, Text, View } from "react-native";
 import React, { useState } from "react";
+import { View, KeyboardAvoidingView } from "react-native";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Text } from "@/components/ui/text";
+import { useColor } from "@/hooks/useColor";
 import { useLocalSearchParams } from "expo-router";
+import { Separator } from "@/components/ui/separator";
+import { subtractUnpaidAmountPurchase } from "@/service/purchase";
 
-interface unpaidAmount {
-  name: string;
-  amount: number;
-  id: number;
-}
-const AmountUnpaid = ({ name, amount, id }: unpaidAmount) => {
-  const [amountLeft, setAmountLeft] = useState(amount);
-  const [clicked, setClicked] = useState(false);
-  const toMe = useLocalSearchParams().type === "toMe";
+const AmountUnpaid = () => {
+  const { id, debt } = useLocalSearchParams();
+  const amount = parseFloat(Array.isArray(debt) ? debt[0] : debt); // this gonna show up small and at the top amount ETB
+  const [amountLeft, setAmountLeft] = useState(0);
+  const [loading, setLoading] = useState(false);
 
+  const textColor = useColor("text");
+
+  const handleSubmit = async (id: number, debt: number) => {
+    try {
+      setLoading(true);
+      await subtractUnpaidAmountPurchase(id, debt);
+      //show a toast and invalidate the orders query
+    } catch (e) {
+      //log the error
+      //show toast
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
-    <View>
-      {toMe ? (
-        <Text>Unpaid Amount by {name} to you</Text>
-      ) : (
-        <Text>Unpaid Amount to {name} by you</Text>
-      )}
-      <Text>Amount.toFixed(2) ETB</Text>
-      <Input
-        value={amountLeft.toString()}
-        onChange={(e) => {
-          const text = e.target.value.trim().replace("/D/", "");
-          setAmountLeft(Number(text));
-        }}
-      />
-      {clicked ? (
-        <Button
-          onPress={() => {
-            setClicked(true);
-          }}
+    <>
+      <KeyboardAvoidingView style={{ marginVertical: 10, padding: 15 }}>
+        <Text variant={"caption"} style={{ textAlign: "center" }}>
+          Initial Debt
+        </Text>
+        <Text
+          variant={"title"}
+          style={{ color: textColor, textAlign: "center" }}
         >
-          Mark as paid
-        </Button>
-      ) : (
-        <Button>Cancel</Button>
-      )}
-      <Button>Save</Button>
-    </View>
+          {amount.toFixed(2)} ETB
+        </Text>
+        <View style={{ gap: 16 }}>
+          <View
+            style={{
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              borderRadius: 8,
+            }}
+          >
+            <Text variant={"caption"}>Amount left</Text>
+            <Text variant="title" style={{ fontSize: 50, color: textColor }}>
+              {(amount - amountLeft).toFixed(2)} ETB
+            </Text>
+          </View>
+          <Input
+            label="Debt"
+            keyboardType="number-pad"
+            value={amountLeft.toString()}
+            onChange={(e) => {
+              const text = Number(e.nativeEvent.text.replace(/\D/g, ""));
+              setAmountLeft((_) => (text > amount ? amount : text));
+            }}
+            // onFocus={(e)=>e.nativeEvent.text}
+          />
+          <Button variant={"outline"} onPress={() => setAmountLeft(amount)}>
+            Remove all Debt
+          </Button>
+          <Separator />
+          <Button loading={loading} onPress={()=>handleSubmit(Number(id), amountLeft)}>Save</Button>
+        </View>
+      </KeyboardAvoidingView>
+    </>
   );
 };
 

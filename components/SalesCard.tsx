@@ -12,16 +12,20 @@ import { User, TrendingUp, Recycle } from "lucide-react-native";
 interface SalesCardProps {
   transaction: ItemTransactionDisplay;
   handleReverse: () => void;
+  handleDebt: () => void;
 }
 
-const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
+const SalesCard = ({
+  transaction,
+  handleReverse,
+  handleDebt,
+}: SalesCardProps) => {
   const successColor = useColor("green");
   const textColor = useColor("text");
   const mutedColor = useColor("textMuted");
 
   return (
     <Card style={{ marginVertical: 8 }}>
-      {/* Status Header */}
       <View
         style={{
           flexDirection: "row",
@@ -47,7 +51,6 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
         </Text>
       </View>
 
-      {/* Main Content */}
       <View style={{ marginBottom: 12 }}>
         <Text variant="title" style={{ marginBottom: 4, color: textColor }}>
           {`${transaction.item_name ?? "Item"} × ${transaction.amount ?? 0}`}
@@ -57,7 +60,6 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
         </Text>
       </View>
 
-      {/* Partner Info */}
       <View
         style={{
           flexDirection: "row",
@@ -68,13 +70,14 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
       >
         <Icon name={User} size={16} color={mutedColor} />
         <Text variant="caption" style={{ color: mutedColor }}>
-          {`${transaction.partner_first_name ?? ""} ${transaction.partner_last_name ?? ""}`.trim() || "No partner"}
+          {`${transaction.first_name ?? ""} ${
+            transaction.last_name ?? ""
+          }`.trim() || "No partner"}
         </Text>
       </View>
 
       <Separator style={{ marginVertical: 12 }} />
 
-      {/* Financial Details */}
       <View
         style={{
           flexDirection: "row",
@@ -100,12 +103,15 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
             variant="caption"
             style={{ color: mutedColor, marginBottom: 2 }}
           >
-            Unpaid Amount
+            Debt
           </Text>
           <Text
             variant="body"
             style={{
-              color: (transaction.unpaid_amount ?? 0) > 0 ? successColor : mutedColor,
+              color:
+                (transaction.unpaid_amount ?? 0) > 0
+                  ? successColor
+                  : mutedColor,
               fontWeight: "600",
             }}
           >
@@ -134,7 +140,6 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
         </View>
       </View>
 
-      {/* Action Buttons */}
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Button
           variant="outline"
@@ -145,6 +150,16 @@ const SalesCard = ({ transaction, handleReverse }: SalesCardProps) => {
         >
           Reverse
         </Button>
+        {transaction.unpaid_amount > 0 && (
+          <Button
+            size="sm"
+            icon={Recycle}
+            style={{ flex: 1 }}
+            onPress={handleDebt}
+          >
+            Pay Debt
+          </Button>
+        )}
       </View>
     </Card>
   );

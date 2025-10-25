@@ -1,7 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { createInventory } from "./inventory";
-import { checkIfEnough, createBusinessCash } from "./business_cash";
-import { InventoryTypes } from "@/constants";
+import { checkIfEnough } from "./business_cash";
 import { checkItemExistence } from "./item";
 import { checkPartnerExistence } from "./partners";
 
@@ -66,7 +64,37 @@ export const purchase = async ({
     unpaidamount: unpaidAmount,
   });
   if (error) {
-    console.log(error.message)
+    console.log(error.message);
     throw new Error(error?.message ?? "Something went wrong");
   } else return data;
+};
+
+export const subtractUnpaidAmountPurchase = async (
+  id: number,
+  amountToSubtract: number
+) => {
+  const { data:unpaidAmountData, error } = await supabase
+    .from("purchases")
+    .select("unpaid_amount")
+    .eq("id", id)
+    .single();
+  if (error) {
+    throw new Error(
+      "Error happened when getting the purchase: related to the unpaidAmount..."
+    );
+  }
+  if (amountToSubtract > unpaidAmountData.unpaid_amount) {
+    throw new Error("Amount to subtract is more than");
+  }
+
+  let { data: rpcData, error: rpcError } = await supabase.rpc(
+    "pay_for_due_purchase_payment",
+    {
+      amount:amountToSubtract,
+      _id:id,
+    }
+  );
+  if (rpcError)
+    throw new Error("Error happended when subtracting unpaidAmount");
+  else return rpcData;
 };
