@@ -400,7 +400,8 @@ const CreatePurchaseOrSale = () => {
               isVisible={isItemBottomSheetVisible}
               onClose={() => setItemBottomSheetVisible(false)}
               snapPoints={[0.9, 0.9]}
-              enableBackdropDismiss={false}
+
+              enableBackdropDismiss={true}
             >
               <KeyboardAvoidingView style={{ gap: 20 }}>
                 <CreateItemForm
@@ -418,7 +419,7 @@ const CreatePurchaseOrSale = () => {
               onClose={() => setPartnerBottomSheetVisible(false)}
               title=""
               snapPoints={[0.5, 0.9]}
-              enableBackdropDismiss={false}
+              enableBackdropDismiss={true}
             >
               <KeyboardAvoidingView style={{ gap: 20 }}>
                 <CreatePartnerForm

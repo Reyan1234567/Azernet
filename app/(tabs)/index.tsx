@@ -1,12 +1,9 @@
 import { StyleSheet, ScrollView } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useRouter } from "expo-router";
 import { Button } from "@/components/ui/button";
-import { ChartContainer } from "@/components/charts/chart-container";
-import { BarChart } from "@/components/charts/bar-chart";
-import { LineChart } from "@/components/charts/line-chart";
 import { useColor } from "@/hooks/useColor";
 import {
   ShoppingCart,
@@ -16,6 +13,10 @@ import {
 } from "lucide-react-native";
 import { Card } from "@/components/ui/card";
 import TopBar from "@/components/topBar";
+import { useQuery } from "@tanstack/react-query";
+import { getDashboardData } from "@/service/dashboard";
+import { Spinner } from "@/components/ui/spinner";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const Index = () => {
   const router = useRouter();
@@ -24,43 +25,12 @@ const Index = () => {
   const textColor = useColor("text");
   const mutedColor = useColor("textMuted");
   const primaryColor = useColor("primary");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
-  const revenueData = [
-    { label: "Mon", value: 120, color: "#3b82f6" },
-    { label: "Tue", value: 180, color: "#ef4444" },
-    { label: "Wed", value: 150, color: "#10b981" },
-    { label: "Thu", value: 220, color: "#f59e0b" },
-    { label: "Fri", value: 260, color: "#8b5cf6" },
-    { label: "Sat", value: 210, color: "#06b6d4" },
-    { label: "Sun", value: 300, color: "#ec4899" },
-  ];
-
-  const ordersData = [
-    { label: "Mon", value: 8, color: "#10b981" },
-    { label: "Tue", value: 12, color: "#3b82f6" },
-    { label: "Wed", value: 9, color: "#f59e0b" },
-    { label: "Thu", value: 15, color: "#ef4444" },
-    { label: "Fri", value: 18, color: "#8b5cf6" },
-    { label: "Sat", value: 14, color: "#06b6d4" },
-    { label: "Sun", value: 20, color: "#ec4899" },
-  ];
-
-  const stats = [
-    {
-      label: "Total Revenue",
-      value: "$1,440",
-      icon: DollarSign,
-      color: "#10b981",
-    },
-    {
-      label: "Total Orders",
-      value: "96",
-      icon: ShoppingCart,
-      color: "#3b82f6",
-    },
-    { label: "Items Sold", value: "234", icon: Package, color: "#f59e0b" },
-    { label: "Growth", value: "+12%", icon: TrendingUp, color: "#8b5cf6" },
-  ];
+  const { data, isLoading, isError, error, isSuccess } = useQuery({
+    queryKey: ["dashboard", selectedDate],
+    queryFn: () => getDashboardData(1, selectedDate ?? new Date()),
+  });
 
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
@@ -75,31 +45,61 @@ const Index = () => {
             Dashboard
           </Text>
           <Text variant="body" style={{ color: mutedColor, marginTop: 4 }}>
-            Welcome back! Here's your business overview
+            Welcome back! Here&apos;s your business overview
           </Text>
+          <DatePicker
+            label="Select Date"
+            value={selectedDate}
+            onChange={setSelectedDate}
+            placeholder="Choose a date to filter"
+            style={{ marginTop: 15 }}
+          />
+          ;
         </View>
 
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          {stats.map((stat, index) => (
-            <Card
-              key={index}
-              style={[styles.statCard, { backgroundColor: cardBg }]}
-            >
+        {isLoading ? (
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Spinner />
+            <Text style={{ color: textColor, marginTop: 8 }}>Loading</Text>
+          </View>
+        ) : isError ? (
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: "#ef4444" }}>
+              {error?.message ?? "Something went wrong"}
+            </Text>
+          </View>
+        ) : isSuccess ? (
+          <View style={styles.statsGrid}>
+            {/* Total Revenue Card */}
+            <Card style={[styles.statCard, { backgroundColor: cardBg }]}>
               <View style={styles.statContent}>
                 <View
                   style={[
                     styles.iconContainer,
-                    { backgroundColor: stat.color + "20" },
+                    { backgroundColor: "#10b98120" },
                   ]}
                 >
-                  <stat.icon size={20} color={stat.color} />
+                  <DollarSign size={20} color="#10b981" />
                 </View>
                 <Text
                   variant="caption"
                   style={{ color: mutedColor, marginTop: 8 }}
                 >
-                  {stat.label}
+                  Total Revenue
                 </Text>
                 <Text
                   variant="title"
@@ -110,57 +110,105 @@ const Index = () => {
                     marginTop: 4,
                   }}
                 >
-                  {stat.value}
+                  ${data[0]?.total_revenue || 0}
                 </Text>
               </View>
             </Card>
-          ))}
-        </View>
 
-        {/* Charts Section */}
-        <View style={styles.chartsSection}>
-          <Text
-            variant="subtitle"
-            style={{ color: textColor, marginBottom: 12, fontSize: 18 }}
-          >
-            Analytics
-          </Text>
-          <View style={styles.row}>
-            <View style={[styles.card, { backgroundColor: cardBg }]}>
-              <ChartContainer
-                title="Weekly Revenue"
-                description="Revenue performance by day"
-              >
-                <LineChart
-                  data={revenueData}
-                  config={{
-                    height: 200,
-                    showLabels: true,
-                    animated: true,
-                    duration: 1000,
+            {/* Total Orders Card */}
+            <Card style={[styles.statCard, { backgroundColor: cardBg }]}>
+              <View style={styles.statContent}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: "#3b82f620" },
+                  ]}
+                >
+                  <ShoppingCart size={20} color="#3b82f6" />
+                </View>
+                <Text
+                  variant="caption"
+                  style={{ color: mutedColor, marginTop: 8 }}
+                >
+                  Total Orders
+                </Text>
+                <Text
+                  variant="title"
+                  style={{
+                    color: textColor,
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    marginTop: 4,
                   }}
-                />
-              </ChartContainer>
-            </View>
+                >
+                  {data[0]?.total_orders || 0}
+                </Text>
+              </View>
+            </Card>
 
-            <View style={[styles.card, { backgroundColor: cardBg }]}>
-              <ChartContainer
-                title="Weekly Orders"
-                description="Order volume by day"
-              >
-                <BarChart
-                  data={ordersData}
-                  config={{
-                    height: 200,
-                    showLabels: true,
-                    animated: true,
-                    duration: 1000,
+            {/* Items Sold Card */}
+            <Card style={[styles.statCard, { backgroundColor: cardBg }]}>
+              <View style={styles.statContent}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: "#f59e0b20" },
+                  ]}
+                >
+                  <Package size={20} color="#f59e0b" />
+                </View>
+                <Text
+                  variant="caption"
+                  style={{ color: mutedColor, marginTop: 8 }}
+                >
+                  Items Sold
+                </Text>
+                <Text
+                  variant="title"
+                  style={{
+                    color: textColor,
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    marginTop: 4,
                   }}
-                />
-              </ChartContainer>
-            </View>
+                >
+                  {data[0]?.items_sold || 0}
+                </Text>
+              </View>
+            </Card>
+
+            {/* Total Profit Card */}
+            <Card style={[styles.statCard, { backgroundColor: cardBg }]}>
+              <View style={styles.statContent}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: "#8b5cf620" },
+                  ]}
+                >
+                  <TrendingUp size={20} color="#8b5cf6" />
+                </View>
+                <Text
+                  variant="caption"
+                  style={{ color: mutedColor, marginTop: 8 }}
+                >
+                  Total Profit
+                </Text>
+                <Text
+                  variant="title"
+                  style={{
+                    color: textColor,
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    marginTop: 4,
+                  }}
+                >
+                  ${data[0]?.total_profit || 0}
+                </Text>
+              </View>
+            </Card>
           </View>
-        </View>
+        ) : null}
       </ScrollView>
     </View>
   );

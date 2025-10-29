@@ -1,9 +1,7 @@
 import React from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useColor } from "@/hooks/useColor";
-import CreateItemForm from "@/components/CreateItemForm";
 import { SafeAreaView } from "react-native-safe-area-context";
-import CreatePartner from "../createPartner";
 import CreatePartnerForm from "@/components/CreatePartnerForm";
 
 const PartnerForm = () => {
