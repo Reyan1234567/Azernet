@@ -411,7 +411,8 @@ export const getListOfItems = async (business_id: number) => {
       `id,
        item_name`
     )
-    .eq("business_id", business_id);
+    .eq("business_id", business_id)
+    .order("created_at", { ascending: false });
 
   if (data) {
     return data;

@@ -1,4 +1,4 @@
-import { FlatList, View } from "react-native";
+import { FlatList, RefreshControl, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +21,7 @@ const SalesTransaction = () => {
   const primaryColor = useColor("primary");
   const red = useColor("red");
   const [search, setSearch] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(false);
   const [modalId, setModalId] = useState(0);
@@ -52,6 +53,12 @@ const SalesTransaction = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await queryClient.refetchQueries({ queryKey: ["sales"] });
+    setIsRefreshing(false);
   };
 
   return (
@@ -127,8 +134,8 @@ const SalesTransaction = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 7,
-              right: 7,
+              bottom: 15,
+              right: 15,
               zIndex: 1000,
             }}
           >
@@ -151,7 +158,13 @@ const SalesTransaction = () => {
           <FlatList
             data={data}
             keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 70 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+              />
+            }
             renderItem={({ item }) => (
               <SalesCard
                 handleReverse={() => {
@@ -170,8 +183,8 @@ const SalesTransaction = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 7,
-              right: 7,
+              bottom: 15,
+              right: 15,
               zIndex: 1000,
             }}
           >

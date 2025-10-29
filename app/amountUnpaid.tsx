@@ -7,6 +7,8 @@ import { useColor } from "@/hooks/useColor";
 import { useLocalSearchParams } from "expo-router";
 import { Separator } from "@/components/ui/separator";
 import { subtractUnpaidAmountPurchase } from "@/service/purchase";
+import { useToast } from "@/components/ui/toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const AmountUnpaid = () => {
   const { id, debt } = useLocalSearchParams();
@@ -15,15 +17,25 @@ const AmountUnpaid = () => {
   const [loading, setLoading] = useState(false);
 
   const textColor = useColor("text");
-
+  const {toast}=useToast();
+  const queryClient = useQueryClient();
   const handleSubmit = async (id: number, debt: number) => {
     try {
       setLoading(true);
       await subtractUnpaidAmountPurchase(id, debt);
-      //show a toast and invalidate the orders query
+      toast({
+        title: "Amount subtracted successfully",
+        variant: "success",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["orders", "purchases"],
+      });
     } catch (e) {
-      //log the error
-      //show toast
+      console.error(e);
+      toast({
+        title: "Failed to subtract amount",
+        variant: "error",
+      });
     } finally {
       setLoading(false);
     }

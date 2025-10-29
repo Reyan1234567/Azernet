@@ -43,6 +43,9 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "updates": {
+      "enabled": true
     }
   }
 }

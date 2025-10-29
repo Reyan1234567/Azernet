@@ -61,11 +61,19 @@ const Partners = () => {
       });
       dialog.close();
     } catch (error) {
-      toast({
-        title: "Error deleting partner",
-        description: "Something went wrong",
-        variant: "error",
-      });
+      if (error instanceof Error) {
+        toast({
+          title: "Error deleting partner",
+          description: error.message,
+          variant: "error",
+        });
+      } else {
+        toast({
+          title: "Error deleting partner",
+          description: "Something went wrong!",
+          variant: "error",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -73,7 +81,6 @@ const Partners = () => {
 
   const renderHeader = () => (
     <View>
-      {/* Title Section */}
       <View style={{ padding: 16, paddingBottom: 8, paddingTop: 5 }}>
         <Text
           variant="title"
@@ -91,7 +98,6 @@ const Partners = () => {
         </Text>
       </View>
 
-      {/* Search Bar */}
       <View style={{ padding: 16, paddingBottom: 8, marginBottom: 5 }}>
         <SearchBar
           placeholder="Search partners..."
@@ -101,7 +107,6 @@ const Partners = () => {
         />
       </View>
 
-      {/* Filter Chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -128,7 +133,6 @@ const Partners = () => {
     </View>
   );
 
-  // Centralized content based on state
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -244,9 +248,9 @@ const Partners = () => {
       />
       <LoadingOverlay
         visible={loading}
-        size='lg'
-        variant='cirlce'
-        label='Processing...'
+        size="sm"
+        variant="cirlce"
+        label="Processing..."
         backdrop={true}
         backdropOpacity={0.7}
       />

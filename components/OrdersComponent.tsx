@@ -1,4 +1,4 @@
-import { FlatList, View } from "react-native";
+import { FlatList, RefreshControl, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,11 +12,7 @@ import { router } from "expo-router";
 import { Spinner, LoadingOverlay } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
-import {
-  changeStatus,
-  deleteOrder,
-  getAllOrders,
-} from "@/service/orders";
+import { changeStatus, deleteOrder, getAllOrders } from "@/service/orders";
 import OrderPendingCard from "./OrderPendingCard";
 import OrderPurchasedCard from "./OrderPurchasedCard";
 import OrderDeliveredCard from "./OrderDeliveredCard";
@@ -39,7 +35,9 @@ const OrdersComponent = () => {
         title: "Purchase reversal successful",
         variant: "success",
       });
-      queryClient.invalidateQueries({ queryKey: ["orders", "purchases", "sales"] });
+      queryClient.invalidateQueries({
+        queryKey: ["orders", "purchases", "sales"],
+      });
       reverseToPending.close();
     } catch (e) {
       toast({
@@ -58,7 +56,9 @@ const OrdersComponent = () => {
         title: "Delivered reversal successful",
         variant: "success",
       });
-      queryClient.invalidateQueries({ queryKey: ["orders", "purchases", "sales"] });
+      queryClient.invalidateQueries({
+        queryKey: ["orders", "purchases", "sales"],
+      });
       reverseToPurchased.close();
     } catch (e) {
       toast({
@@ -70,6 +70,7 @@ const OrdersComponent = () => {
     }
   };
   const [search, setSearch] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(false);
   const [modalId, setModalId] = useState(0);
@@ -84,7 +85,9 @@ const OrdersComponent = () => {
     setLoading(true);
     try {
       await deleteOrder(orderId);
-      queryClient.invalidateQueries({ queryKey: ["orders", "purchases", "sales"] });
+      queryClient.invalidateQueries({
+        queryKey: ["orders", "purchases", "sales"],
+      });
       toast({
         title: "Order deleted successfully",
         variant: "success",
@@ -101,9 +104,15 @@ const OrdersComponent = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await queryClient.refetchQueries({ queryKey: ["orders"] });
+    setIsRefreshing(false);
+  };
+
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ padding: 16, paddingBottom: 8, marginBottom: 5 }}>
+      <View style={{ padding: 16 }}>
         <SearchBar
           placeholder="Search orders..."
           value={search}
@@ -184,8 +193,8 @@ const OrdersComponent = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 7,
-              right: 7,
+              bottom: 15,
+              right: 15,
               zIndex: 1000,
             }}
           >
@@ -205,11 +214,17 @@ const OrdersComponent = () => {
         </>
       )}
       {isSuccess && data.length !== 0 && (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1}}>
           <FlatList
             data={data}
             keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={{ padding: 16 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 70 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+              />
+            }
             renderItem={({ item }) => {
               return item.status === "pending" ? (
                 <OrderPendingCard
@@ -244,27 +259,21 @@ const OrdersComponent = () => {
               ) : null;
             }}
           />
-          <View
+          <Button
+            variant="default"
+            size="lg"
+            icon={Plus}
             style={{
               position: "absolute",
-              bottom: 7,
-              right: 7,
-              zIndex: 1000,
+              bottom: 15,
+              right: 15,
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              backgroundColor: primaryColor,
             }}
-          >
-            <Button
-              variant="default"
-              size="lg"
-              icon={Plus}
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: primaryColor,
-              }}
-              onPress={() => router.push("/createOrder")}
-            />
-          </View>
+            onPress={() => router.push("/createOrder")}
+          />
           <AlertDialog
             isVisible={dialog.isVisible}
             onClose={dialog.close}
@@ -310,9 +319,9 @@ const OrdersComponent = () => {
       )}
       <LoadingOverlay
         visible={loading}
-        size='lg'
-        variant='cirlce'
-        label='Processing...'
+        size="sm"
+        variant="cirlce"
+        label="Processing..."
         backdrop={true}
         backdropOpacity={0.7}
       />

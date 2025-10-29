@@ -1,4 +1,4 @@
-import { FlatList, View } from "react-native";
+import { FlatList, RefreshControl, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,8 +21,8 @@ const PurchaseTransaction = () => {
   const queryClient = useQueryClient();
   const primaryColor = useColor("primary");
   const red = useColor("red");
-  const textColor = useColor("text");
   const [search, setSearch] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(false);
   const dialog = useAlertDialog();
@@ -54,6 +54,12 @@ const PurchaseTransaction = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await queryClient.refetchQueries({ queryKey: ["purchases"] });
+    setIsRefreshing(false);
   };
 
   return (
@@ -129,8 +135,8 @@ const PurchaseTransaction = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 7,
-              right: 7,
+              bottom: 15,
+              right: 15,
               zIndex: 1000,
             }}
           >
@@ -153,7 +159,13 @@ const PurchaseTransaction = () => {
           <FlatList
             data={data}
             keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 70 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+              />
+            }
             renderItem={({ item }) => (
               <PurchaseCard
                 handleReverse={() => {
@@ -172,8 +184,8 @@ const PurchaseTransaction = () => {
           <View
             style={{
               position: "absolute",
-              bottom: 7,
-              right: 7,
+              bottom: 15,
+              right: 15,
               zIndex: 1000,
             }}
           >

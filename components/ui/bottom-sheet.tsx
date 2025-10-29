@@ -1,30 +1,30 @@
-import { Text } from '@/components/ui/text';
-import { View } from '@/components/ui/view';
-import  {useKeyboardHeight}  from '@/hooks/useKeyboardHeight'; // Make sure this path is correct
-import { useColor } from '@/hooks/useColor';
-import { BORDER_RADIUS } from '@/theme/globals';
-import React, { useEffect } from 'react';
+import { Text } from "@/components/ui/text";
+import { View } from "@/components/ui/view";
+import { useKeyboardHeight } from "@/hooks/useKeyboardHeight"; // Make sure this path is correct
+import { useColor } from "@/hooks/useColor";
+import { BORDER_RADIUS } from "@/theme/globals";
+import React, { useEffect } from "react";
 import {
   Dimensions,
   Modal,
   ScrollView,
   TouchableWithoutFeedback,
   ViewStyle,
-} from 'react-native';
+} from "react-native";
 import {
   Gesture,
   GestureDetector,
   GestureHandlerRootView,
-} from 'react-native-gesture-handler';
+} from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
+} from "react-native-reanimated";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const MAX_TRANSLATE_Y = -SCREEN_HEIGHT + 50;
 
 type BottomSheetContentProps = {
@@ -48,13 +48,14 @@ const BottomSheetContent = ({
   mutedColor,
   onHandlePress,
 }: BottomSheetContentProps) => {
+  const textColor = useColor("text");
   return (
     <Animated.View
       style={[
         {
           height: SCREEN_HEIGHT,
-          width: '100%',
-          position: 'absolute',
+          width: "100%",
+          position: "absolute",
           top: SCREEN_HEIGHT,
           backgroundColor: cardColor,
           borderTopLeftRadius: BORDER_RADIUS,
@@ -68,9 +69,9 @@ const BottomSheetContent = ({
       <TouchableWithoutFeedback onPress={onHandlePress}>
         <View
           style={{
-            width: '100%',
+            width: "100%",
             paddingVertical: 12,
-            alignItems: 'center',
+            alignItems: "center",
           }}
         >
           <View
@@ -93,7 +94,10 @@ const BottomSheetContent = ({
             paddingBottom: 8,
           }}
         >
-          <Text variant='title' style={{ textAlign: 'center' }}>
+          <Text
+            variant="title"
+            style={{ textAlign: "center", color: textColor }}
+          >
             {title}
           </Text>
         </View>
@@ -103,7 +107,7 @@ const BottomSheetContent = ({
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-        keyboardShouldPersistTaps='handled'
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {children}
@@ -133,8 +137,8 @@ export function BottomSheet({
   style,
   disablePanGesture = false,
 }: BottomSheetProps) {
-  const cardColor = useColor('card');
-  const mutedColor = useColor('muted');
+  const cardColor = useColor("card");
+  const mutedColor = useColor("muted");
   const { keyboardHeight, isKeyboardVisible } = useKeyboardHeight();
 
   const translateY = useSharedValue(0);
@@ -171,7 +175,7 @@ export function BottomSheet({
 
   // Function to animate the sheet to a specific destination
   const scrollTo = (destination: number) => {
-    'worklet';
+    "worklet";
     translateY.value = withSpring(destination, { damping: 50, stiffness: 400 });
   };
 
@@ -182,7 +186,7 @@ export function BottomSheet({
 
     // Only adjust position if the sheet is currently visible
     if (isVisible) {
-      const currentSnapHeight = snapPointsHeights[currentSnapIndex.value];
+      const currentSnapHeight = snapPointsHeights[currentSnapIndex.value + 1];
       let destination: number;
 
       if (isKeyboardVisible) {
@@ -194,11 +198,11 @@ export function BottomSheet({
       }
       scrollTo(destination);
     }
-  }, [keyboardHeight, isKeyboardVisible, isVisible]);
+  }, [/*keyboardHeight, isKeyboardVisible,*/ isVisible]);
   // --- END: NEW KEYBOARD HANDLING LOGIC ---
 
   const findClosestSnapPoint = (currentY: number) => {
-    'worklet';
+    "worklet";
     // Adjust the currentY by the keyboard height to find the original snap point
     const adjustedY = currentY + keyboardHeightSV.value;
 
@@ -227,7 +231,7 @@ export function BottomSheet({
   };
 
   const animateClose = () => {
-    'worklet';
+    "worklet";
     translateY.value = withSpring(0, { damping: 50, stiffness: 400 });
     opacity.value = withTiming(0, { duration: 300 }, (finished) => {
       if (finished) {
@@ -242,15 +246,25 @@ export function BottomSheet({
     })
     .onUpdate((event) => {
       const newY = context.value.y + event.translationY;
+      console.log("context: " + context.value.y);
+      console.log("event: translateY " + event.translationY);
+      console.log("event: absoluteX ", event.absoluteY);
+      // if scrolling down???...
       if (newY <= 0 && newY >= MAX_TRANSLATE_Y) {
+        console.log("In the if")
         translateY.value = newY;
       }
+      console.log(newY)
     })
     .onEnd((event) => {
       const currentY = translateY.value;
       const velocity = event.velocityY;
 
-      if (velocity > 500 && currentY > -SCREEN_HEIGHT * 0.2) {
+      if (velocity > 200 && currentY > -SCREEN_HEIGHT * 0.7) {
+        console.log("In the velocity IF")
+        console.log(velocity)
+        console.log(-SCREEN_HEIGHT * 0.7)
+
         animateClose();
         return;
       }
@@ -285,12 +299,12 @@ export function BottomSheet({
       visible={modalVisible}
       transparent
       statusBarTranslucent
-      animationType='none'
+      animationType="none"
     >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <Animated.View
           style={[
-            { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.8)' },
+            { flex: 1, backgroundColor: "rgba(0, 0, 0, 0.8)" },
             rBackdropStyle,
           ]}
         >

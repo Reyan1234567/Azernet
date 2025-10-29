@@ -1,44 +1,54 @@
-import { TouchableOpacity, View } from "react-native";
+import { View } from "react-native";
 import { Text } from "./ui/text";
 import { Button } from "./ui/button";
-import { SafeAreaView } from "react-native-safe-area-context";
-import React from "react";
+import React, { useEffect } from "react";
 import { useColor } from "@/hooks/useColor";
-import { ArrowLeft } from "lucide-react-native";
 import { Separator } from "./ui/separator";
 import { Controller, useForm } from "react-hook-form";
 import { Input } from "./ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Picker } from "./ui/picker";
-import { createPartner } from "@/service/partners";
+import {
+  createPartner,
+  editPartner,
+  getSinglePartner,
+} from "@/service/partners";
 import { useToast } from "./ui/toast";
-import { useQueryClient } from "@tanstack/react-query";
-
-const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  phoneNumber: z.string().min(1, "Phone number is required"),
-  role: z.string().min(1, "Role is required"),
-});
-
-type FormSchemaValues = z.infer<typeof formSchema>;
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Spinner } from "./ui/spinner"; // Import the spinner
 
 interface PartnerCreation {
   handleGoBack: () => void;
-  fromBottom: boolean;
-  bgColor: string;
+  id?: string;
+  bgColor?: string;
 }
 
-const CreatePartnerForm = ({
-  handleGoBack,
-  fromBottom,
-  bgColor,
-}: PartnerCreation) => {
+const CreatePartnerForm = ({ handleGoBack, id, bgColor }: PartnerCreation) => {
+  const isEdit = !!id;
+  const formSchema = z.object({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    phoneNumber: z
+      .string()
+      .min(1, "Phone number is required")
+      .regex(/^(09|07)\d{8}$/, "Start with 09 or 07, length must be 10"),
+    role: z.string().min(1, "Role is required"),
+  });
+
+  type FormSchemaValues = z.infer<typeof formSchema>;
+
   const queryClient = useQueryClient();
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["partner", id],
+    queryFn: () => getSinglePartner(Number(id)!),
+    enabled: isEdit,
+  });
+
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<FormSchemaValues>({
     resolver: zodResolver(formSchema),
@@ -50,34 +60,74 @@ const CreatePartnerForm = ({
     },
   });
 
+  useEffect(() => {
+    if (isEdit && data) {
+      reset({
+        firstName: data?.first_name || "",
+        lastName: data?.last_name || "",
+        phoneNumber: data?.phone_number || "",
+        role: data?.role || "",
+      });
+    }
+  }, [isEdit, data, reset]);
+
   const roleOptions = [
     { value: "customer", label: "Customer" },
     { value: "supplier", label: "Supplier" },
   ];
 
   const textColor = useColor("text");
-  const red = useColor("red");
+
   const { toast } = useToast();
 
   const onSubmit = async (data: FormSchemaValues) => {
     try {
-      await createPartner({
-        first_name: data.firstName,
-        last_name: data.lastName,
-        phone_number: data.phoneNumber,
-        role: data.role,
-        business_id:1
-      });
-      
-      // Invalidate queries to refresh partner lists
-      queryClient.invalidateQueries({ queryKey: ["editTransactionData"] });
-      queryClient.invalidateQueries({ queryKey: ["editCategoryTransactionData"] });
-      
-      toast({
-        title: "Success!",
-        description: "Partner created successfully",
-        variant: "success",
-      });
+      if (isEdit) {
+        await editPartner({
+          first_name: data.firstName,
+          last_name: data.lastName,
+          phone_number: data.phoneNumber,
+          role: data.role,
+          id: Number(id),
+          business_id: 1,
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: ["partners"],
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: ["createPurchaseOrSale"],
+        });
+
+        toast({
+          title: "Success!",
+          description: "Partner edited successfully",
+          variant: "success",
+        });
+      } else {
+        await createPartner({
+          first_name: data.firstName,
+          last_name: data.lastName,
+          phone_number: data.phoneNumber,
+          role: data.role,
+          business_id: 1,
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: ["partners"],
+        });
+
+        queryClient.invalidateQueries({
+          queryKey: ["createPurchaseOrSale"],
+        });
+
+        toast({
+          title: "Success!",
+          description: "Partner created successfully",
+          variant: "success",
+        });
+      }
       handleGoBack();
     } catch (error) {
       toast({
@@ -89,8 +139,35 @@ const CreatePartnerForm = ({
     }
   };
 
+  // Show loading spinner when fetching partner data for editing
+  if (isEdit && isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: bgColor, justifyContent: "center", alignItems: "center" }}>
+        <Spinner/>
+        <Text style={{ marginTop: 16, color: textColor }}>Loading partner data...</Text>
+      </View>
+    );
+  }
+
+  // Show error message if fetching partner data fails
+  if (isEdit && isError) {
+    return (
+      <View style={{ flex: 1, backgroundColor: bgColor, justifyContent: "center", alignItems: "center", padding: 16 }}>
+        <Text variant="title" style={{ color: textColor, textAlign: "center", marginBottom: 16 }}>
+          Error Loading Partner
+        </Text>
+        <Text style={{ color: textColor, textAlign: "center", marginBottom: 24 }}>
+          {error?.message || "Failed to load partner data. Please try again."}
+        </Text>
+        <Button onPress={handleGoBack} variant="outline">
+          Go Back
+        </Button>
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
       <View style={{ flex: 1 }}>
         {/* Header */}
         <View
@@ -101,14 +178,6 @@ const CreatePartnerForm = ({
             paddingBottom: 0,
           }}
         >
-          {!fromBottom && (
-            <TouchableOpacity
-              onPress={handleGoBack}
-              style={{ marginRight: 16 }}
-            >
-              <ArrowLeft size={24} color={textColor} />
-            </TouchableOpacity>
-          )}
           <Text
             variant="title"
             style={{
@@ -117,7 +186,7 @@ const CreatePartnerForm = ({
               color: textColor,
             }}
           >
-            Create Partner
+            {!isEdit ? "Create Partner" : "Edit Partner"}
           </Text>
         </View>
 
@@ -137,12 +206,8 @@ const CreatePartnerForm = ({
                   placeholder="John"
                   value={field.value}
                   onChangeText={field.onChange}
+                  error={errors.firstName?.message}
                 />
-                {errors.firstName && (
-                  <Text style={{ color: red, marginTop: -5 }}>
-                    {errors.firstName.message}
-                  </Text>
-                )}
               </>
             )}
           />
@@ -158,12 +223,8 @@ const CreatePartnerForm = ({
                   placeholder="Doe"
                   value={field.value}
                   onChangeText={field.onChange}
+                  error={errors.lastName?.message}
                 />
-                {errors.lastName && (
-                  <Text style={{ color: red, marginTop: -5 }}>
-                    {errors.lastName.message}
-                  </Text>
-                )}
               </>
             )}
           />
@@ -180,12 +241,8 @@ const CreatePartnerForm = ({
                   value={field.value}
                   onChangeText={field.onChange}
                   keyboardType="phone-pad"
+                  error={errors.phoneNumber?.message}
                 />
-                {errors.phoneNumber && (
-                  <Text style={{ color: red, marginTop: -5 }}>
-                    {errors.phoneNumber.message}
-                  </Text>
-                )}
               </>
             )}
           />
@@ -202,22 +259,18 @@ const CreatePartnerForm = ({
                   value={field.value}
                   onValueChange={field.onChange}
                   placeholder="Select their role"
+                  error={errors.role?.message}
                 />
-                {errors.role && (
-                  <Text style={{ color: red, marginTop: -5 }}>
-                    {errors.role.message}
-                  </Text>
-                )}
               </>
             )}
           />
 
-          <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
-            {isSubmitting ? "Creating..." : "Submit"}
+          <Button onPress={handleSubmit(onSubmit)} loading={isSubmitting}>
+            {!isEdit ? "Create Partner" : "Edit Partner"}
           </Button>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

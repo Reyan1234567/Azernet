@@ -245,9 +245,9 @@ const Items = () => {
       />
       <LoadingOverlay
         visible={loading}
-        size='lg'
-        variant='cirlce'
-        label='Processing...'
+        size="sm"
+        variant="cirlce"
+        label="Processing..."
         backdrop={true}
         backdropOpacity={0.7}
       />

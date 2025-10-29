@@ -1,12 +1,10 @@
-import { TouchableOpacity, View } from "react-native";
+import { View } from "react-native";
 import { Text } from "../components/ui/text";
 import { Button } from "../components/ui/button";
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useEffect } from "react";
 import { useColor } from "@/hooks/useColor";
-import { ArrowLeft } from "lucide-react-native";
 import { Spinner } from "./ui/spinner";
-import { Separator } from "./ui/separator";
 import { Controller, useForm } from "react-hook-form";
 import { Input } from "./ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +12,7 @@ import * as z from "zod";
 import { Picker } from "./ui/picker";
 import { createItem, editItem, getAsingleItem } from "@/service/item";
 import { useToast } from "./ui/toast";
-import { QueryClient, useQuery } from "@tanstack/react-query";
+import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const formSchema = z.object({
   itemName: z.string().min(1, "Item name is required"),
@@ -51,7 +49,7 @@ const CreateItemForm = ({
       description: "",
     },
   });
-  const queryClient = new QueryClient();
+  const queryClient =useQueryClient();
   const MeasureOptions = [
     { value: "Item", label: "Item" },
     { value: "KG", label: "KG" },
@@ -70,6 +68,9 @@ const CreateItemForm = ({
   });
 
   useEffect(() => {
+    console.log("useEffect...");
+    console.log("useEffect...");
+
     if (isEditMode && data) {
       reset({
         itemName: data.item_name,
@@ -81,35 +82,44 @@ const CreateItemForm = ({
 
   const onSubmit = async (data: FormSchemaValues) => {
     try {
+      console.log("am i even in the correct thign???");
       if (isEditMode) {
         await editItem({
           id: Number(itemId),
           item_name: data.itemName,
           measure: data.measure,
           description: data.description || "",
-          business_id: 1
+          business_id: 1,
         });
         toast({
           title: "Success!",
           description: "Item info has been updated.",
           variant: "success",
         });
-        await queryClient.invalidateQueries({ queryKey: ["items"] });
-        handleGoBack()
+        queryClient.invalidateQueries({ queryKey: ["items"] });
+        console.log("Code reach test for edit");
+        queryClient.invalidateQueries({
+          queryKey: ["createPurchaseOrSale"],
+        });
+        handleGoBack();
       } else {
         await createItem({
           item_name: data.itemName,
           measure: data.measure,
           description: data.description || "",
-          business_id: 1
+          business_id: 1,
         });
+        console.log("Code reach test for create");
+        queryClient.invalidateQueries({ queryKey: ["items"] });
+        queryClient.invalidateQueries({
+          queryKey: ["createPurchaseOrSale"],
+        });
+        handleGoBack();
         toast({
           title: "Success!",
           description: "Item created successfully",
           variant: "success",
         });
-        await queryClient.invalidateQueries({ queryKey: ["items"] });
-        handleGoBack();
       }
     } catch (error) {
       toast({
@@ -194,13 +204,8 @@ const CreateItemForm = ({
                   placeholder="Samsung A36"
                   value={field.value}
                   onChangeText={field.onChange}
-                  error={!!errors.itemName}
+                  error={errors.itemName?.message}
                 />
-                {errors.itemName && (
-                  <Text style={{ color: "red", marginTop: -5 }}>
-                    {errors.itemName.message}
-                  </Text>
-                )}
               </>
             )}
           />
@@ -216,12 +221,8 @@ const CreateItemForm = ({
                   value={field.value}
                   onValueChange={field.onChange}
                   placeholder="Select the measurement"
+                  error={errors.measure?.message}
                 />
-                {errors.measure && (
-                  <Text style={{ color: "red", marginTop: -5 }}>
-                    {errors.measure.message}
-                  </Text>
-                )}
               </>
             )}
           />
