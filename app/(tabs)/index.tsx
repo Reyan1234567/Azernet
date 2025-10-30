@@ -10,6 +10,7 @@ import {
   Package,
   TrendingUp,
   DollarSign,
+  TrendingDown,
 } from "lucide-react-native";
 import { Card } from "@/components/ui/card";
 import TopBar from "@/components/topBar";
@@ -17,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getDashboardData } from "@/service/dashboard";
 import { Spinner } from "@/components/ui/spinner";
 import { DatePicker } from "@/components/ui/date-picker";
+import Currency from "@/components/currency";
 
 const Index = () => {
   const router = useRouter();
@@ -36,7 +38,7 @@ const Index = () => {
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <TopBar />
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, { flex: 1 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -110,13 +112,18 @@ const Index = () => {
                     marginTop: 4,
                   }}
                 >
-                  ${data[0]?.total_revenue || 0}
+                  {<Currency currency={data[0]?.total_revenue} />}
                 </Text>
               </View>
             </Card>
 
             {/* Total Orders Card */}
-            <Card style={[styles.statCard, { backgroundColor: cardBg }]}>
+            <Card
+              style={[
+                styles.statCard,
+                { backgroundColor: cardBg, width: "fit-content" },
+              ]}
+            >
               <View style={styles.statContent}>
                 <View
                   style={[
@@ -186,13 +193,17 @@ const Index = () => {
                     { backgroundColor: "#8b5cf620" },
                   ]}
                 >
-                  <TrendingUp size={20} color="#8b5cf6" />
+                  {data[0]?.total_profit > 0 ? (
+                    <TrendingUp size={20} color="#8b5cf6" />
+                  ) : (
+                    <TrendingDown size={20} color="#c6002bff" />
+                  )}
                 </View>
                 <Text
                   variant="caption"
                   style={{ color: mutedColor, marginTop: 8 }}
                 >
-                  Total Profit
+                  {data[0]?.total_profit > 0 ? "Total Profit" : "Total loss"}
                 </Text>
                 <Text
                   variant="title"
@@ -203,7 +214,7 @@ const Index = () => {
                     marginTop: 4,
                   }}
                 >
-                  ${data[0]?.total_profit || 0}
+                  {<Currency currency={data[0].total_profit} />}
                 </Text>
               </View>
             </Card>
@@ -237,6 +248,7 @@ const styles = StyleSheet.create({
   },
   statContent: {
     alignItems: "flex-start",
+    width: "auto",
   },
   iconContainer: {
     width: 40,

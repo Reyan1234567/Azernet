@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, TouchableOpacity } from "react-native";
 import React, { useState } from "react";
 import { Bell, Menu } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
@@ -17,13 +17,12 @@ const TopBar = () => {
           backgroundColor: secondary,
           flexDirection: "row",
           justifyContent: "space-between",
-          padding: 20,
+          padding: 15,
           paddingTop:30
-        //   paddingVertical:20
         }}
       >
-        <Menu onPress={() => setOpen((now) => !now)} color={primaryColor} />
-        <Bell color={primaryColor} />
+        <TouchableOpacity style={{padding:10}} onPress={() => setOpen((now) => !now)}><Menu  color={primaryColor} /></TouchableOpacity>
+        <Bell style={{padding:10}} color={primaryColor} />
       </View>
       <SheetLeft open={open} setOpen={setOpen} />
     </>

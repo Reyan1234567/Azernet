@@ -1,4 +1,4 @@
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
+// import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Session } from "@supabase/supabase-js";
 import React, {
   createContext,
@@ -8,9 +8,9 @@ import React, {
   useState,
 } from "react";
 import { supabase } from "../lib/supabase";
-// import * as AuthSession from "expo-auth-session";
+import { Platform } from "react-native";
 
-// export type Session = Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'];
+// import * as AuthSession from "expo-auth-session";
 
 interface AuthContextValue {
   session: Session | null;
@@ -20,15 +20,17 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(
+  undefined
+);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
 
-  GoogleSignin.configure({
-    webClientId: process.env.GOOGLE_WEB_CLIENT_ID,
-    offlineAccess: false,
-  });
+  // GoogleSignin.configure({
+  //   webClientId: process.env.GOOGLE_WEB_CLIENT_ID,
+  //   offlineAccess: true,
+  // });
 
   const initializeSession = async () => {
     const {
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       setSession(sess);
     });
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -62,22 +65,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      // 1. Check for Play Services
-      await GoogleSignin.hasPlayServices();
-
-      // 2. Get user info and ID token
-      const userInfo = await GoogleSignin.signIn();
-      const idToken = userInfo?.data?.idToken;
-
-      if (idToken) {
-        // 3. Sign in with Supabase
-        const { data, error } = await supabase.auth.signInWithIdToken({
+      if (Platform.OS === "web") {
+        const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
-          token: idToken,
+          options: {
+            redirectTo: "http://localhost:8081",
+          },
         });
-
-        if (error) throw error;
-        console.log("Google sign-in successful!", data.user);
+        if (error) {
+          console.log(error.message);
+        }
+      } else {
+        // // 1. Check for Play Services
+        // await GoogleSignin.hasPlayServices();
+        // // 2. Get user info and ID token
+        // const userInfo = await GoogleSignin.signIn();
+        // const idToken = userInfo?.data?.idToken;
+        // if (idToken) {
+        //   // 3. Sign in with Supabase
+        //   const { data, error } = await supabase.auth.signInWithIdToken({
+        //     provider: "google",
+        //     token: idToken,
+        //   });
+        //   if (error) throw error;
+        //   // SecureStore.setItem("userId", data.user.id);
+        //   console.log("Google sign-in successful!", data.user);
+        // }
       }
     } catch (error) {
       console.error("Google sign-in error:", error);
