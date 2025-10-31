@@ -30,7 +30,7 @@ export const BusinessProvider = ({ children }: any) => {
         setBusinesses(businessArr);
       })
       .catch((e) => {
-        throw new Error("can't get businesses");
+        console.log("can't")
       });
   };
 

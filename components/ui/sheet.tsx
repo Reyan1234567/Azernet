@@ -226,7 +226,7 @@ export function SheetContent({ children, style }: SheetContentProps) {
             ]}
           >
             {/* Close button */}
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[
                 styles.closeButton,
                 {
@@ -239,7 +239,7 @@ export function SheetContent({ children, style }: SheetContentProps) {
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <X size={20} color={iconColor} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {/* Content */}
             <View style={styles.contentContainer}>{children}</View>

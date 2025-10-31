@@ -41,7 +41,12 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
       <SheetContent
         style={[
           styles.sheetContent,
-          { flexDirection: "column", flex: 1, justifyContent: "space-between" },
+          {
+            flexDirection: "column",
+            flex: 1,
+            justifyContent: "space-between",
+            paddingTop: 30,
+          },
         ]}
       >
         <View>

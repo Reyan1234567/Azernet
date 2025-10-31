@@ -111,7 +111,9 @@ const CreateOrder = () => {
         title: "Order created successfully",
         variant: "success",
       });
-      queryClient.invalidateQueries({ queryKey: ["orders", "purchases", "sales"] });
+      queryClient.invalidateQueries({
+        queryKey: ["orders", "purchases", "sales"],
+      });
       router.back();
     } catch (e) {
       toast({
@@ -227,7 +229,7 @@ const CreateOrder = () => {
                     field.onChange(Number(option?.value));
                   }}
                 >
-                  <ComboboxTrigger error={!!errors.partner}>
+                  <ComboboxTrigger error={errors.partner?.message}>
                     <ComboboxValue placeholder="Select partner (Optional)..." />
                   </ComboboxTrigger>
                   <ComboboxContent>
@@ -276,7 +278,7 @@ const CreateOrder = () => {
                     field.onChange(Number(option?.value));
                   }}
                 >
-                  <ComboboxTrigger error={!!errors.item}>
+                  <ComboboxTrigger error={errors.item?.message}>
                     <ComboboxValue placeholder="Select item..." />
                   </ComboboxTrigger>
                   <ComboboxContent>
@@ -344,7 +346,6 @@ const CreateOrder = () => {
               <View style={{ gap: 20 }}>
                 <CreatePartnerForm
                   handleGoBack={() => setPartnerBottomSheetVisible(false)}
-                  fromBottom={true}
                   bgColor={secondaryBg}
                 />
               </View>

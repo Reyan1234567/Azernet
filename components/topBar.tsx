@@ -22,7 +22,7 @@ const TopBar = () => {
         }}
       >
         <TouchableOpacity style={{padding:10}} onPress={() => setOpen((now) => !now)}><Menu  color={primaryColor} /></TouchableOpacity>
-        <Bell style={{padding:10}} color={primaryColor} />
+        <TouchableOpacity style={{padding:10}} onPress={()=>console.log("Bell pressed")}><Bell  color={primaryColor} /></TouchableOpacity>
       </View>
       <SheetLeft open={open} setOpen={setOpen} />
     </>
