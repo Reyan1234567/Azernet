@@ -1,12 +1,10 @@
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useColor } from "@/hooks/useColor";
-// import * as SecureStore from "expo-secure-store";
-import React, { useContext, useState } from "react";
+import React, { useContext } from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
-import { User, UserPlus, Zap, Briefcase, Building } from "lucide-react-native";
+import { Plus, User, UserPlus, Zap } from "lucide-react-native";
 import { Separator } from "./ui/separator";
 import {
   Accordion,
@@ -15,12 +13,8 @@ import {
   AccordionTrigger,
 } from "./ui/accordion";
 import BusinessView from "./BusinessView";
-import { useQuery } from "@tanstack/react-query";
 import { BusinessContext } from "@/context/businessContext";
-import { getBusinessIds } from "@/service/business";
-import { AuthContext } from "@/context/authContext";
-import Business from "@/app/(tabs)/business";
-
+import { router } from "expo-router";
 interface sheetInterface {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -29,25 +23,24 @@ interface sheetInterface {
 export function SheetLeft({ open, setOpen }: sheetInterface) {
   const textColor = useColor("text");
   const mutedColor = useColor("textMuted");
-  const borderColor = useColor("border");
   const cardColor = useColor("card");
+  const foreground = useColor("foreground");
   const footerItems = [
     { icon: UserPlus, label: "Invite Friends" },
     { icon: Zap, label: "Telegram Features" },
   ];
   const BUSINESS = useContext(BusinessContext);
+  console.log(BUSINESS.businesses);
   return (
     <Sheet open={open} onOpenChange={setOpen} side="left">
       <SheetContent
-        style={[
-          styles.sheetContent,
-          {
-            flexDirection: "column",
-            flex: 1,
-            justifyContent: "space-between",
-            paddingTop: 30,
-          },
-        ]}
+        style={{
+          flexDirection: "column",
+          flex: 1,
+          justifyContent: "space-between",
+          paddingTop: 30,
+          paddingHorizontal: 0,
+        }}
       >
         <View>
           <View style={styles.header}>
@@ -90,22 +83,42 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
                   />
                 </AccordionTrigger>
                 <AccordionContent>
-                  <View style={{ paddingLeft: 30 }}>
+                  <View style={{ paddingLeft: 20 }}>
                     {BUSINESS?.businesses?.map((business, index) => (
                       <BusinessView
-                        name={business.name}
+                        name={business.business_name}
                         key={index}
                         onClick={() => {
-                          BUSINESS.setBusiness(business.id.toString());
-                          // SecureStore.setItem(
-                          //   "businessId",
-                          //   String(business.id)
-                          // );
+                          if (BUSINESS.businessId !== business.id.toString()) {
+                            BUSINESS.setBusiness(business.id.toString());
+                            // router.canGoBack() && router.dismissAll();
+                            router.navigate("/(app)/(root)/(tabs)");
+                            setOpen(false);
+                          }
                         }}
                         icon={false}
                         selected={BUSINESS.businessId === String(business.id)}
                       />
                     ))}
+                    <TouchableOpacity
+                      onPress={() => {
+                        setOpen(false);
+                        router.navigate("/(app)/(root)/createBusiness");
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          paddingVertical: 12,
+                          paddingLeft: 30,
+                          gap: 20,
+                        }}
+                      >
+                        <Plus size={15} color={foreground} />
+                        <Text style={{ color: textColor }}>Add Business</Text>
+                      </View>
+                    </TouchableOpacity>
                   </View>
                 </AccordionContent>
               </AccordionItem>
@@ -141,9 +154,6 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
 }
 
 const styles = StyleSheet.create({
-  sheetContent: {
-    paddingHorizontal: 0,
-  },
   header: {
     flexDirection: "row",
     alignItems: "center",

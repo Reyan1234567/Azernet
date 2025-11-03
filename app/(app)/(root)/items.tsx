@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState, useContext } from "react";
 import { router } from "expo-router";
 import { FlatList } from "react-native";
 import { View } from "@/components/ui/view";
@@ -16,6 +16,7 @@ import { deleteItem, getAllItems } from "@/service/item";
 import { Spinner, LoadingOverlay } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
+import { BusinessContext } from "@/context/businessContext";
 
 const Items = () => {
   const { toast } = useToast();
@@ -33,23 +34,37 @@ const Items = () => {
   const mutedColor = useColor("textMuted");
   const primaryColor = useColor("primary");
 
-  const filters = ["All", "KG", "Item", "Lt"];
+  const filters = useMemo(() => ["All", "KG", "Item", "Lt"], []);
+
+  const businessContext = useContext(BusinessContext);
+  if (!businessContext) {
+    throw new Error("BusinessContext is not available");
+  }
+
+  const { businessId } = businessContext;
 
   const { data, isSuccess, isLoading, isError, error } = useQuery({
-    queryKey: ["items", filter, debouncedSearchTerm],
-    queryFn: () => getAllItems(1, search, filter),
+    queryKey: ["items", filter, debouncedSearchTerm, businessId],
+    queryFn: () => {
+      if (!businessId) throw new Error("No business ID found");
+      return getAllItems(Number(businessId), search, filter);
+    },
+    enabled: !!businessId,
   });
 
-  const handleEditItem = (itemId: string) => {
+  const handleEditItem = useCallback((itemId: string) => {
     router.push(`/editItem/${itemId}`);
-  };
+  }, []);
 
-  const handleDeleteItem = (itemId: string) => {
-    setModalId(Number(itemId));
-    dialog.open();
-  };
+  const handleDeleteItem = useCallback(
+    (itemId: string) => {
+      setModalId(Number(itemId));
+      dialog.open();
+    },
+    [dialog]
+  );
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     setLoading(true);
     try {
       await deleteItem(modalId);
@@ -60,73 +75,84 @@ const Items = () => {
       });
       dialog.close();
     } catch (error) {
-      toast({
-        title: "Error deleting item",
-        description: "Something went wrong",
-        variant: "error",
-      });
+      if (error instanceof Error) {
+        toast({
+          title: "Error deleting item",
+          description: error.message,
+          variant: "error",
+        });
+      } else {
+        toast({
+          title: "Error deleting item",
+          description: "Something went wrong",
+          variant: "error",
+        });
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [dialog, modalId, queryClient, toast]);
 
   // Centralized header component
-  const renderHeader = () => (
-    <View>
-      <View style={{ padding: 16, paddingBottom: 8, paddingTop: 5 }}>
-        <Text
-          variant="title"
-          style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            color: textColor,
-            marginBottom: 8,
-          }}
-        >
-          Items
-        </Text>
-        <Text variant="body" style={{ color: mutedColor }}>
-          Manage your products and inventory
-        </Text>
-      </View>
-
-      <View style={{ padding: 16, paddingBottom: 8, marginBottom: 5 }}>
-        <SearchBar
-          placeholder="Search items..."
-          value={search}
-          onChangeText={setSearch}
-          showClearButton={true}
-        />
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{
-          paddingHorizontal: 16,
-          paddingVertical: 5,
-          marginBottom: 18,
-          height: 50,
-        }}
-        contentContainerStyle={{ gap: 8 }}
-      >
-        {filters.map((filterOption) => (
-          <Button
-            key={filterOption}
-            variant={filter === filterOption ? "default" : "outline"}
-            size="sm"
-            onPress={() => setFilter(filterOption)}
-            style={{ minWidth: 80 }}
+  const renderHeader = useMemo(
+    () => (
+      <View>
+        <View style={{ padding: 16, paddingBottom: 8, paddingTop: 5 }}>
+          <Text
+            variant="title"
+            style={{
+              fontSize: 24,
+              fontWeight: "bold",
+              color: textColor,
+              marginBottom: 8,
+            }}
           >
-            {filterOption}
-          </Button>
-        ))}
-      </ScrollView>
-    </View>
+            Items
+          </Text>
+          <Text variant="body" style={{ color: mutedColor }}>
+            Manage your products and inventory
+          </Text>
+        </View>
+
+        <View style={{ padding: 16, paddingBottom: 8, marginBottom: 5 }}>
+          <SearchBar
+            placeholder="Search items..."
+            value={search}
+            onChangeText={setSearch}
+            showClearButton={true}
+          />
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{
+            paddingHorizontal: 16,
+            paddingVertical: 5,
+            marginBottom: 18,
+            height: 50,
+          }}
+          contentContainerStyle={{ gap: 8 }}
+        >
+          {filters.map((filterOption) => (
+            <Button
+              key={filterOption}
+              variant={filter === filterOption ? "default" : "outline"}
+              size="sm"
+              onPress={() => setFilter(filterOption)}
+              style={{ minWidth: 80 }}
+            >
+              {filterOption}
+            </Button>
+          ))}
+        </ScrollView>
+      </View>
+    ),
+    [filter, filters, mutedColor, search, textColor]
   );
 
   // Centralized content based on state
-  const renderContent = () => {
+  const renderContent = useMemo(() => {
     if (isLoading) {
       return (
         <View
@@ -201,13 +227,22 @@ const Items = () => {
     }
 
     return null;
-  };
+  }, [
+    data,
+    error,
+    handleDeleteItem,
+    handleEditItem,
+    isError,
+    isLoading,
+    isSuccess,
+    red,
+  ]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
       <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: 24 }}>
-        {renderHeader()}
-        {renderContent()}
+        {renderHeader}
+        {renderContent}
         <View
           style={{
             position: "absolute",

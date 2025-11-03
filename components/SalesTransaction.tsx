@@ -1,6 +1,6 @@
 import { FlatList, RefreshControl, View } from "react-native";
 import { Text } from "./ui/text";
-import React, { useState } from "react";
+import React, { useContext, useState, useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAllSalesTransactions } from "@/service/transaction";
 import { SearchBar } from "./ui/searchbar";
@@ -14,6 +14,7 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
 import { reverseSale } from "@/service/reversals";
 import { AlertDialog, useAlertDialog } from "./ui/alert-dialog";
+import { BusinessContext } from "@/context/businessContext";
 
 const SalesTransaction = () => {
   const { toast } = useToast();
@@ -26,40 +27,68 @@ const SalesTransaction = () => {
   const [loading, setLoading] = useState(false);
   const [modalId, setModalId] = useState(0);
   const dialog = useAlertDialog();
-  const filters = ["All", "Paid", "Unpaid"];
+  const filters = useMemo(() => ["All", "Paid", "Unpaid"], []);
   const debouncedSearchTerm = useDebounce(search, 300);
+  const BUSINESS = useContext(BusinessContext);
 
   const { data, error, isLoading, isSuccess, isError } = useQuery({
-    queryKey: ["salesTransactions", filter, debouncedSearchTerm],
-    queryFn: () => getAllSalesTransactions(1, search, filter),
+    queryKey: [
+      "salesTransactions",
+      filter,
+      debouncedSearchTerm,
+      BUSINESS?.businessId,
+    ],
+    queryFn: () =>
+      getAllSalesTransactions(BUSINESS?.businessId, search, filter),
   });
 
-  const handleReverseTransaction = async (transactionId: number) => {
-    setLoading(true);
-    try {
-      await reverseSale(transactionId);
-      queryClient.invalidateQueries({ queryKey: ["salesTransactions"] });
-      toast({
-        title: "Sale reversed successfully",
-        variant: "success",
-      });
-      dialog.close();
-    } catch (error: any) {
-      toast({
-        title: "Failed to reverse sale",
-        description: error.message ?? "Something went wrong",
-        variant: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleReverseTransaction = useCallback(
+    async (transactionId: number) => {
+      setLoading(true);
+      try {
+        await reverseSale(transactionId);
+        queryClient.invalidateQueries({ queryKey: ["salesTransactions"] });
+        toast({
+          title: "Sale reversed successfully",
+          variant: "success",
+        });
+        dialog.close();
+      } catch (error: any) {
+        toast({
+          title: "Failed to reverse sale",
+          description: error.message ?? "Something went wrong",
+          variant: "error",
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [dialog, queryClient, toast]
+  );
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await queryClient.refetchQueries({ queryKey: ["sales"] });
+    await queryClient.refetchQueries({ queryKey: ["salesTransactions"] });
     setIsRefreshing(false);
-  };
+  }, [queryClient]);
+
+  const renderSaleItem = useCallback(
+    ({ item }: { item: any }) => (
+      <SalesCard
+        handleReverse={() => {
+          setModalId(item.id);
+          dialog.open();
+        }}
+        handleDebt={() =>
+          router.push(
+            `/amountUnpaid?id=${item.id}&debt=${item.unpaid_amount}&type=sale`
+          )
+        }
+        transaction={item}
+      />
+    ),
+    [dialog]
+  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -92,7 +121,7 @@ const SalesTransaction = () => {
             onPress={() => setFilter(item)}
             style={{ minWidth: 80 }}
           >
-            {item}
+           {item}
           </Button>
         )}
       />
@@ -106,7 +135,7 @@ const SalesTransaction = () => {
             flex: 1,
           }}
         >
-          <Spinner size="default" variant="dots" label="Fetching Sales" />
+            <Spinner size="default" variant="dots" label="Fetching Sales" />
         </View>
       ) : isError ? (
         <View
@@ -117,8 +146,9 @@ const SalesTransaction = () => {
             flex: 1,
           }}
         >
+           {" "}
           <Text style={{ color: red }}>
-            {error.message ?? "Something went wrong"}
+            {error.message ?? "Something went wrong"} {" "}
           </Text>
         </View>
       ) : isSuccess && data?.length === 0 ? (
@@ -130,7 +160,7 @@ const SalesTransaction = () => {
             flex: 1,
           }}
         >
-          <Text variant="caption">{"No sales found"}</Text>
+            <Text variant="caption">{"No sales found"}</Text> {" "}
           <View
             style={{
               position: "absolute",
@@ -151,10 +181,12 @@ const SalesTransaction = () => {
               }}
               onPress={() => router.push("/createPurchaseOrSale?type=sale")}
             />
+             {" "}
           </View>
         </View>
       ) : isSuccess ? (
         <View style={{ flex: 1 }}>
+           {" "}
           <FlatList
             data={data}
             keyExtractor={(item) => item.id.toString()}
@@ -165,21 +197,9 @@ const SalesTransaction = () => {
                 onRefresh={handleRefresh}
               />
             }
-            renderItem={({ item }) => (
-              <SalesCard
-                handleReverse={() => {
-                  setModalId(item.id);
-                  dialog.open();
-                }}
-                handleDebt={() =>
-                  router.push(
-                    `/amountUnpaid?id=${item.id}&debt=${item.unpaid_amount}&type=sale`
-                  )
-                }
-                transaction={item}
-              />
-            )}
+            renderItem={renderSaleItem}
           />
+           {" "}
           <View
             style={{
               position: "absolute",
@@ -200,6 +220,7 @@ const SalesTransaction = () => {
               }}
               onPress={() => router.push("/createPurchaseOrSale?type=sale")}
             />
+             {" "}
           </View>
         </View>
       ) : null}

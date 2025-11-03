@@ -22,7 +22,7 @@
         "backgroundColor": "#0A0A0A"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.zaha"
+      "package": "com.erp.azernet"
     },
     "web": {
       "bundler": "metro",
@@ -40,7 +40,6 @@
           "backgroundColor": "#0A0A0A"
         }
       ]
-      // ,"expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

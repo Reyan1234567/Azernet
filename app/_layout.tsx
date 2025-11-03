@@ -1,93 +1,51 @@
+import { SplashScreenController } from "@/components/SplashScreenController";
+import { ToastProvider } from "@/components/ui/toast";
+import { AuthContext, AuthProvider } from "@/context/authContext";
+import { BusinessContext, BusinessProvider } from "@/context/businessContext";
 import { ThemeProvider } from "@/theme/theme-provider";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import "react-native-reanimated";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ToastProvider } from "@/components/ui/toast";
-import { AuthProvider } from "@/context/authContext";
-import { BusinessProvider } from "@/context/businessContext";
+import { useContext } from "react";
 
-const queryClient = new QueryClient();
-
-export default function RootLayout() {
+export default function Root() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <BusinessProvider>
-                <Stack>
-                  <Stack.Screen
-                    name="(tabs)"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="createPartner"
-                    options={{ headerTitle: "" }}
-                  />
-                  <Stack.Screen
-                    name="createItem"
-                    options={{ headerTitle: "" }}
-                  />
-                  <Stack.Screen
-                    name="partners"
-                    options={{
-                      headerTitle: "",
-                      headerStyle: {
-                        backgroundColor: "transparent",
-                      },
-                    }}
-                  />
-                  <Stack.Screen
-                    name="items"
-                    options={{
-                      headerTitle: "",
-                      headerStyle: {
-                        backgroundColor: "transparent",
-                      },
-                    }}
-                  />
-                  <Stack.Screen
-                    name="editPartner/[id]"
-                    options={{ headerTitle: "" }}
-                  />
-                  <Stack.Screen
-                    name="editItem/[id]"
-                    options={{ headerTitle: "" }}
-                  />
-                  <Stack.Screen name="fund" options={{ headerTitle: "" }} />
-                  <Stack.Screen
-                    name="createPurchaseOrSale"
-                    options={{ headerTitle: "" }}
-                  />
-                  <Stack.Screen
-                    name="createOrder"
-                    options={{ headerTitle: "" }}
-                  />
-                  <Stack.Screen name="withdraw" options={{ headerTitle: "" }} />
-                  <Stack.Screen
-                    name="purchaseOrder/[id]"
-                    options={{ headerTitle: "" }}
-                  />
-                  <Stack.Screen
-                    name="saleOrder/[id]"
-                    options={{ headerTitle: "" }}
-                  />
-                  <Stack.Screen
-                    name="amountUnpaid"
-                    options={{ headerTitle: "" }}
-                  />
-                  <Stack.Screen name="+not-found" />
-                  <StatusBar style="auto" />
-                  <Stack.Screen name="login" options={{ headerTitle: "" }} />
-                </Stack>
-              </BusinessProvider>
-            </AuthProvider>
-          </ToastProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+    <AuthProvider>
+      <BusinessProvider>
+        <SplashScreenController />
+        <RootNavigator />
+      </BusinessProvider>
+    </AuthProvider>
+  );
+}
+
+function RootNavigator() {
+  const auth = useContext(AuthContext);
+  const business = useContext(BusinessContext);
+
+  console.log(!!auth?.session);
+  console.log(auth?.session);
+
+  console.log(!business?.businessId);
+  console.log(business?.businessId);
+
+  return (
+    <ThemeProvider>
+      <ToastProvider>
+        <Stack>
+          <Stack.Protected guard={!!auth?.session && !!business?.businessId}>
+            <Stack.Screen name="(app)" options={{ headerShown: false }} />
+          </Stack.Protected>
+          {/* if value in guard is true then make the screen inside visible */}
+          <Stack.Protected guard={!auth?.session}>
+            <Stack.Screen name="login" />
+          </Stack.Protected>
+          <Stack.Protected guard={!!auth?.session && !business?.businessId}>
+            <Stack.Screen
+              name="firstBusiness"
+              options={{ headerShown: false }}
+            />
+          </Stack.Protected>
+        </Stack>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

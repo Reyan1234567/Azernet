@@ -14,7 +14,12 @@ const ItemForm = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
-      <CreateItemForm isEditMode={isEditMode} handleGoBack={()=>router.back()} itemId={itemId} fromBottom={false} bgColor={bgColor}/>
+      <CreateItemForm
+        isEditMode={isEditMode}
+        handleGoBack={() => router.back()}
+        itemId={itemId}
+        bgColor={bgColor}
+      />
     </SafeAreaView>
   );
 };

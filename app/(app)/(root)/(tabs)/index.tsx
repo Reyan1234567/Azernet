@@ -1,9 +1,8 @@
 import { StyleSheet, ScrollView } from "react-native";
-import React, { useState } from "react";
+import React, { useContext, useState, useMemo } from "react";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
 import { useRouter } from "expo-router";
-import { Button } from "@/components/ui/button";
 import { useColor } from "@/hooks/useColor";
 import {
   ShoppingCart,
@@ -19,20 +18,23 @@ import { getDashboardData } from "@/service/dashboard";
 import { Spinner } from "@/components/ui/spinner";
 import { DatePicker } from "@/components/ui/date-picker";
 import Currency from "@/components/currency";
+import { BusinessContext } from "@/context/businessContext";
 
 const Index = () => {
-  const router = useRouter();
   const bgColor = useColor("background");
   const cardBg = useColor("card");
   const textColor = useColor("text");
   const mutedColor = useColor("textMuted");
-  const primaryColor = useColor("primary");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-
+  const BUSINESS = useContext(BusinessContext);
   const { data, isLoading, isError, error, isSuccess } = useQuery({
-    queryKey: ["dashboard", selectedDate],
-    queryFn: () => getDashboardData(1, selectedDate ?? new Date()),
+    queryKey: ["dashboard", selectedDate, BUSINESS?.businessId],
+    queryFn: () =>
+      getDashboardData(BUSINESS?.businessId, selectedDate ?? new Date()),
   });
+
+  // Use useMemo to extract and stabilize dashboard data access
+  const dashboardData = useMemo(() => data?.[0] || {}, [data]);
 
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
@@ -56,7 +58,6 @@ const Index = () => {
             placeholder="Choose a date to filter"
             style={{ marginTop: 15 }}
           />
-          ;
         </View>
 
         {isLoading ? (
@@ -87,7 +88,15 @@ const Index = () => {
         ) : isSuccess ? (
           <View style={styles.statsGrid}>
             {/* Total Revenue Card */}
-            <Card style={[styles.statCard, { backgroundColor: cardBg }]}>
+            <Card
+              style={{
+                backgroundColor: cardBg,
+                flex: 1,
+                minWidth: "47%",
+                borderRadius: 12,
+                padding: 16,
+              }}
+            >
               <View style={styles.statContent}>
                 <View
                   style={[
@@ -112,7 +121,7 @@ const Index = () => {
                     marginTop: 4,
                   }}
                 >
-                  {<Currency currency={data[0]?.total_revenue} />}
+                  {<Currency currency={dashboardData.total_revenue} />}
                 </Text>
               </View>
             </Card>
@@ -148,7 +157,7 @@ const Index = () => {
                     marginTop: 4,
                   }}
                 >
-                  {data[0]?.total_orders || 0}
+                  {dashboardData.total_orders || 0}
                 </Text>
               </View>
             </Card>
@@ -179,7 +188,7 @@ const Index = () => {
                     marginTop: 4,
                   }}
                 >
-                  {data[0]?.items_sold || 0}
+                  {dashboardData.items_sold || 0}
                 </Text>
               </View>
             </Card>
@@ -193,7 +202,7 @@ const Index = () => {
                     { backgroundColor: "#8b5cf620" },
                   ]}
                 >
-                  {data[0]?.total_profit > 0 ? (
+                  {dashboardData.total_profit > 0 ? (
                     <TrendingUp size={20} color="#8b5cf6" />
                   ) : (
                     <TrendingDown size={20} color="#c6002bff" />
@@ -203,7 +212,9 @@ const Index = () => {
                   variant="caption"
                   style={{ color: mutedColor, marginTop: 8 }}
                 >
-                  {data[0]?.total_profit > 0 ? "Total Profit" : "Total loss"}
+                  {dashboardData.total_profit > 0
+                    ? "Total Profit"
+                    : "Total loss"}
                 </Text>
                 <Text
                   variant="title"
@@ -214,7 +225,7 @@ const Index = () => {
                     marginTop: 4,
                   }}
                 >
-                  {<Currency currency={data[0].total_profit} />}
+                  {<Currency currency={dashboardData.total_profit} />}
                 </Text>
               </View>
             </Card>

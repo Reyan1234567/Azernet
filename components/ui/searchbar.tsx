@@ -26,7 +26,7 @@ interface SearchBarProps extends Omit<TextInputProps, 'style'> {
   debounceMs?: number;
 }
 
-export function SearchBar({
+export const SearchBar=React.memo(function SearchBar({
   loading = false,
   onSearch,
   onClear,
@@ -147,7 +147,7 @@ export function SearchBar({
       {rightIcon && !showClear && !loading && rightIcon}
     </View>
   );
-}
+})
 
 // SearchBar with suggestions dropdown
 interface SearchBarWithSuggestionsProps extends SearchBarProps {

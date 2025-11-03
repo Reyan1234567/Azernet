@@ -9,7 +9,7 @@ export const createBusinessCash = async (
   amount: number
 ) => {
   console.log("In createBusinessCash");
-  if (typeof businessId !== "number" || !amount || !description || !amount) {
+  if (!amount || !description || !amount) {
     throw new Error("Invalid businessId or amount or description or type");
   }
   await businessIdExist(businessId);
@@ -62,18 +62,19 @@ export const createWithdraw = async (
 };
 
 export const getSumMoney = async (business_id_arg: number) => {
-  let { data, error } = await supabase.rpc("getsumofmoney", {
+  let { data, error } = await supabase.rpc("get_sum_of_money", {
     business_id_arg,
   });
 
   if (error) {
     throw new Error(error.message);
   }
+  console.log("data:", data);
   return data;
 };
 
 export const checkIfEnough = async (business_id_arg: number) => {
-  let { data, error } = await supabase.rpc("checkifenoughcash", {
+  let { data, error } = await supabase.rpc("get_sum_of_money", {
     business_id_arg,
   });
   if (error) {

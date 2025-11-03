@@ -1,5 +1,5 @@
 import { ItemTransactionDisplay } from "@/service/transaction";
-import React from "react";
+import React, { memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
@@ -15,11 +15,11 @@ interface PurchaseCardProps {
   handleDebit: () => void;
 }
 
-const PurchaseCard = ({
+const PurchaseCard = memo(function PurchaseCard({
   transaction,
   handleReverse,
   handleDebit,
-}: PurchaseCardProps) => {
+}: PurchaseCardProps) {
   const destructiveColor = useColor("red");
   const textColor = useColor("text");
   const mutedColor = useColor("textMuted");
@@ -164,6 +164,6 @@ const PurchaseCard = ({
       </View>
     </Card>
   );
-};
+});
 
 export default PurchaseCard;

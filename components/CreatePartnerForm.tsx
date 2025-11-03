@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { Text } from "./ui/text";
 import { Button } from "./ui/button";
-import React, { useEffect } from "react";
+import React, { useContext, useEffect } from "react";
 import { useColor } from "@/hooks/useColor";
 import { Separator } from "./ui/separator";
 import { Controller, useForm } from "react-hook-form";
@@ -17,6 +17,7 @@ import {
 import { useToast } from "./ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Spinner } from "./ui/spinner"; // Import the spinner
+import { BusinessContext } from "@/context/businessContext";
 
 interface PartnerCreation {
   handleGoBack: () => void;
@@ -77,7 +78,7 @@ const CreatePartnerForm = ({ handleGoBack, id, bgColor }: PartnerCreation) => {
   ];
 
   const textColor = useColor("text");
-
+  const BUSINESS=useContext(BusinessContext)
   const { toast } = useToast();
 
   const onSubmit = async (data: FormSchemaValues) => {
@@ -89,7 +90,7 @@ const CreatePartnerForm = ({ handleGoBack, id, bgColor }: PartnerCreation) => {
           phone_number: data.phoneNumber,
           role: data.role,
           id: Number(id),
-          business_id: 1,
+          business_id: BUSINESS?.businessId,
         });
 
         queryClient.invalidateQueries({
@@ -111,7 +112,7 @@ const CreatePartnerForm = ({ handleGoBack, id, bgColor }: PartnerCreation) => {
           last_name: data.lastName,
           phone_number: data.phoneNumber,
           role: data.role,
-          business_id: 1,
+          business_id: BUSINESS?.businessId,
         });
 
         queryClient.invalidateQueries({

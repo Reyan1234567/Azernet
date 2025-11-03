@@ -1,6 +1,7 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/text";
 import React from "react";
-import { Briefcase, Building, LucideIcon } from "lucide-react-native";
+import { Briefcase, Building, Check } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 
 interface busV {
@@ -13,22 +14,40 @@ interface busV {
 const BusinessView = ({ name, onClick, icon, selected }: busV) => {
   const textColor = useColor("text");
   const cardColor = useColor("card");
-  const borderColor = useColor("border");
+  const borderColor = useColor("foreground");
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onClick}>
       <View
-        style={[
-          styles.iconContainer,
-          { backgroundColor: selected ? borderColor : cardColor },
-        ]}
+        style={{
+          display: "flex",
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "center",
+        }}
       >
-        {icon ? (
-          <Building color={textColor} />
-        ) : (
-          <Briefcase color={textColor} />
-        )}
+        <View style={[styles.iconContainer]}>
+          {icon ? (
+            <Building color={textColor} />
+          ) : (
+            <Briefcase color={textColor} />
+          )}
+        </View>
+        <Text variant="" style={{ color: textColor }}>
+          {name}
+        </Text>
       </View>
-      <Text style={[styles.menuLabel, { color: textColor }]}>{name}</Text>
+
+      {selected && (
+        <View
+          style={{
+            backgroundColor: borderColor,
+            borderRadius: 50,
+            padding: 5,
+          }}
+        >
+          <Check size={15} />
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -41,10 +60,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 12,
-  },
-  menuLabel: {
-    fontSize: 16,
-    fontWeight: "500",
+    justifyContent: "space-between",
   },
   iconContainer: {
     width: 36,

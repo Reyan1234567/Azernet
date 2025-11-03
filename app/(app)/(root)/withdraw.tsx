@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { Text } from "@/components/ui/text";
-import React from "react";
+import React, { useContext } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +12,7 @@ import { createWithdraw } from "@/service/business_cash";
 import { useToast } from "@/components/ui/toast";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { BusinessContext } from "@/context/businessContext";
 
 const formSchema = z.object({
   amount: z.number().min(1),
@@ -39,9 +40,11 @@ const Withdraw = () => {
   const queryClient = useQueryClient();
   const red = useColor("red");
   const { toast } = useToast();
+  const BUSINESS = useContext(BusinessContext);
+
   const onSubmit = async (data: formType) => {
     try {
-      await createWithdraw(1, data.amount, data.description);
+      await createWithdraw(BUSINESS?.businessId, data.amount, data.description);
       toast({
         title: "Withdrawal Successful",
         description: "Your withdrawal has been successfully recorded.",
@@ -98,15 +101,10 @@ const Withdraw = () => {
               text = text.trim().replace(/\D/g, "");
               field.onChange(Number(text));
             }}
-            error={!!errors.amount}
+            error={errors.amount?.message}
           />
         )}
       />
-      {errors.amount && (
-        <Text style={{ color: red, marginLeft: 4 }}>
-          {errors.amount.message}
-        </Text>
-      )}
       <Controller
         control={control}
         name="description"
@@ -116,15 +114,10 @@ const Withdraw = () => {
             placeholder="Enter description"
             value={field.value}
             onChangeText={field.onChange}
-            error={!!errors.description}
+            error={errors.description?.message}
           />
         )}
       />
-      {errors.description && (
-        <Text style={{ color: red, marginLeft: 4 }}>
-          {errors.description.message}
-        </Text>
-      )}
       <Button
         style={{ marginTop: 10 }}
         loading={isSubmitting}

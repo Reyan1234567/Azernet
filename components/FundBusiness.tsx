@@ -8,20 +8,23 @@ import {
 import { useColor } from "@/hooks/useColor";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import React from "react";
+import React, { useContext } from "react";
 import { View } from "react-native";
 import { Separator } from "./ui/separator";
 import { Text } from "../components/ui/text";
 import { Skeleton } from "./ui/skeleton";
 import { getSumMoney } from "@/service/business_cash";
+import { BusinessContext } from "@/context/businessContext";
 
 const FundBusiness = () => {
   const textColor = useColor("text");
   const mutedColor = useColor("textMuted");
   const red = useColor("red");
+  const BUSINESS = useContext(BusinessContext);
+
   const { data, isLoading, isSuccess } = useQuery({
-    queryKey: ["sumMoney"],
-    queryFn: () => getSumMoney(1),
+    queryKey: ["sumMoney", BUSINESS?.businessId],
+    queryFn: () => getSumMoney(BUSINESS?.businessId),
   });
   return (
     <Card style={{ padding: 20 }}>
@@ -67,12 +70,12 @@ const FundBusiness = () => {
               paddingBottom: 10,
             }}
           >
-            {data[0].total_money
+            {data
               ? new Intl.NumberFormat("en-US", {
                   style: "currency",
                   currency: "ETB",
-                }).format(data[0].total_money)
-              : 0}{" "}
+                }).format(data)
+              : 0.0}
           </Text>
         ) : (
           <Text style={{ textAlign: "center", color: red }}>

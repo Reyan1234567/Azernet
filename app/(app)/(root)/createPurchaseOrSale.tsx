@@ -1,7 +1,7 @@
-import { KeyboardAvoidingView, ScrollView, View} from "react-native";
+import { KeyboardAvoidingView, ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,6 +30,7 @@ import { useToast } from "@/components/ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { purchase } from "@/service/purchase";
 import { sell } from "@/service/sale";
+import { BusinessContext } from "@/context/businessContext";
 
 const CreatePurchaseOrSale = () => {
   const [numberOfItems, setNumberOfItems] = useState(0);
@@ -96,14 +97,14 @@ const CreatePurchaseOrSale = () => {
   const [isItemBottomSheetVisible, setItemBottomSheetVisible] = useState(false);
   const [isPartnerBottomSheetVisible, setPartnerBottomSheetVisible] =
     useState(false);
-
+  const BUSINESS = useContext(BusinessContext);
   // One unified useQuery to fetch all data
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["createPurchaseOrSale"],
+    queryKey: ["createPurchaseOrSale", BUSINESS?.businessId],
     queryFn: async () => {
       const [items, partners] = await Promise.all([
-        getListOfItems(1),
-        getListOfPartners(1),
+        getListOfItems(BUSINESS?.businessId),
+        getListOfPartners(BUSINESS?.businessId),
       ]);
       return { items, partners };
     },
@@ -152,6 +153,7 @@ const CreatePurchaseOrSale = () => {
       router.back();
     } catch (e) {
       if (e instanceof Error) {
+        console.log(e.message);
         toast({
           title: e.message,
           variant: "error",
@@ -213,7 +215,7 @@ const CreatePurchaseOrSale = () => {
             flexDirection: "row",
             alignItems: "center",
             padding: 16,
-            paddingBottom:0
+            paddingBottom: 0,
           }}
         >
           <Text
@@ -400,7 +402,6 @@ const CreatePurchaseOrSale = () => {
               isVisible={isItemBottomSheetVisible}
               onClose={() => setItemBottomSheetVisible(false)}
               snapPoints={[0.9, 0.9]}
-
               enableBackdropDismiss={true}
             >
               <KeyboardAvoidingView style={{ gap: 20 }}>
@@ -408,7 +409,6 @@ const CreatePurchaseOrSale = () => {
                   isEditMode={false}
                   handleGoBack={() => setItemBottomSheetVisible(false)}
                   itemId={"new"}
-                  fromBottom={true}
                   bgColor={secondaryBg}
                 />
               </KeyboardAvoidingView>

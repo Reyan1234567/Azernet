@@ -2,7 +2,7 @@ import { View } from "react-native";
 import { Text } from "../components/ui/text";
 import { Button } from "../components/ui/button";
 import { SafeAreaView } from "react-native-safe-area-context";
-import React, { useEffect } from "react";
+import React, { useContext, useEffect } from "react";
 import { useColor } from "@/hooks/useColor";
 import { Spinner } from "./ui/spinner";
 import { Controller, useForm } from "react-hook-form";
@@ -12,7 +12,8 @@ import * as z from "zod";
 import { Picker } from "./ui/picker";
 import { createItem, editItem, getAsingleItem } from "@/service/item";
 import { useToast } from "./ui/toast";
-import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BusinessContext } from "@/context/businessContext";
 
 const formSchema = z.object({
   itemName: z.string().min(1, "Item name is required"),
@@ -26,14 +27,12 @@ interface itemCreation {
   isEditMode: boolean | "";
   handleGoBack: () => void;
   itemId: string;
-  fromBottom: boolean;
   bgColor: string;
 }
 const CreateItemForm = ({
   isEditMode,
   handleGoBack,
   itemId,
-  fromBottom,
   bgColor,
 }: itemCreation) => {
   const {
@@ -49,7 +48,7 @@ const CreateItemForm = ({
       description: "",
     },
   });
-  const queryClient =useQueryClient();
+  const queryClient = useQueryClient();
   const MeasureOptions = [
     { value: "Item", label: "Item" },
     { value: "KG", label: "KG" },
@@ -66,6 +65,7 @@ const CreateItemForm = ({
     enabled: !!isEditMode && !!itemId && itemId !== "new",
     staleTime: 0,
   });
+  const BUSINESS = useContext(BusinessContext);
 
   useEffect(() => {
     console.log("useEffect...");
@@ -89,7 +89,7 @@ const CreateItemForm = ({
           item_name: data.itemName,
           measure: data.measure,
           description: data.description || "",
-          business_id: 1,
+          business_id: BUSINESS?.businessId
         });
         toast({
           title: "Success!",
@@ -107,7 +107,7 @@ const CreateItemForm = ({
           item_name: data.itemName,
           measure: data.measure,
           description: data.description || "",
-          business_id: 1,
+          business_id: BUSINESS?.businessId,
         });
         console.log("Code reach test for create");
         queryClient.invalidateQueries({ queryKey: ["items"] });

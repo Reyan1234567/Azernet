@@ -47,7 +47,7 @@ export const purchase = async ({
   //check if there is enough cash to fund the purchase
   const cashCheck = await checkIfEnough(businessId);
 
-  if (cashCheck[0].total_money - lineTotal < 0) {
+  if (cashCheck - lineTotal < 0) {
     throw new Error("You don't have enough assets to fund this purchase!");
   }
   //create a purchase

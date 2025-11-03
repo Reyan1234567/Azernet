@@ -1,6 +1,6 @@
 import { FlatList, RefreshControl, View } from "react-native";
 import { Text } from "./ui/text";
-import React, { useState } from "react";
+import React, { useCallback, useContext, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAllPurchaseTransactions } from "@/service/transaction";
 import { SearchBar } from "./ui/searchbar";
@@ -14,7 +14,7 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
 import { reversePurchase } from "@/service/reversals";
 import { AlertDialog, useAlertDialog } from "./ui/alert-dialog";
-import { useLocalSearchParams } from "expo-router/build/hooks";
+import { BusinessContext } from "@/context/businessContext";
 
 const PurchaseTransaction = () => {
   const { toast } = useToast();
@@ -28,39 +28,50 @@ const PurchaseTransaction = () => {
   const dialog = useAlertDialog();
   const [modalId, setModalId] = useState(0);
 
-  const filters = ["All", "Paid", "Unpaid"];
+  const filters = useMemo(() => ["All", "Paid", "Unpaid"], []);
   const debouncedSearchTerm = useDebounce(search, 300);
-  const { data, error, isLoading, isSuccess, isError } = useQuery({
-    queryKey: ["purchaseTransactions", filter, debouncedSearchTerm],
-    queryFn: () => getAllPurchaseTransactions(1, search, filter),
-  });
-  const { id } = useLocalSearchParams();
-  const handleReverseTransaction = async (transactionId: number) => {
-    setLoading(true);
-    try {
-      await reversePurchase(transactionId);
-      queryClient.invalidateQueries({ queryKey: ["purchaseTransactions"] });
-      toast({
-        title: "Purchase reversed successfully",
-        variant: "success",
-      });
-      dialog.close();
-    } catch (error: any) {
-      toast({
-        title: "Failed to reverse purchase",
-        description: error.message ?? "Something went wrong",
-        variant: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const BUSINESS = useContext(BusinessContext);
 
-  const handleRefresh = async () => {
+  const { data, error, isLoading, isSuccess, isError } = useQuery({
+    queryKey: [
+      "purchaseTransactions",
+      filter,
+      debouncedSearchTerm,
+      BUSINESS?.businessId,
+    ],
+    queryFn: () =>
+      getAllPurchaseTransactions(BUSINESS?.businessId, search, filter),
+  });
+
+  const handleReverseTransaction = useCallback(
+    async (transactionId: number) => {
+      setLoading(true);
+      try {
+        await reversePurchase(transactionId);
+        queryClient.invalidateQueries({ queryKey: ["purchaseTransactions"] });
+        toast({
+          title: "Purchase reversed successfully",
+          variant: "success",
+        });
+        dialog.close();
+      } catch (error: any) {
+        toast({
+          title: "Failed to reverse purchase",
+          description: error.message ?? "Something went wrong",
+          variant: "error",
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [dialog, queryClient, toast]
+  );
+
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     await queryClient.refetchQueries({ queryKey: ["purchases"] });
     setIsRefreshing(false);
-  };
+  }, [queryClient]);
 
   return (
     <View style={{ flex: 1 }}>

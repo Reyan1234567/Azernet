@@ -112,7 +112,13 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
         variant: "success",
       });
       queryClient.invalidateQueries({
-        queryKey: ["orders", "purchases", "sales"],
+        queryKey: ["orders"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["purchases"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["sales"],
       });
       router.back();
     } catch (error: any) {

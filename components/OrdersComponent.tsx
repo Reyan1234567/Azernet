@@ -1,6 +1,6 @@
 import { FlatList, RefreshControl, View } from "react-native";
 import { Text } from "./ui/text";
-import React, { useState } from "react";
+import React, { useContext, useState, useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { SearchBar } from "./ui/searchbar";
@@ -17,6 +17,7 @@ import OrderPendingCard from "./OrderPendingCard";
 import OrderPurchasedCard from "./OrderPurchasedCard";
 import OrderDeliveredCard from "./OrderDeliveredCard";
 import { ORDERSTATUS } from "@/constants";
+import { BusinessContext } from "@/context/businessContext";
 
 const OrdersComponent = () => {
   const { toast } = useToast();
@@ -27,7 +28,20 @@ const OrdersComponent = () => {
   const primaryColor = useColor("primary");
   const red = useColor("red");
 
-  const handlePurchasedReversal = async () => {
+  const [search, setSearch] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [filter, setFilter] = useState("All");
+  const [loading, setLoading] = useState(false);
+  const [modalId, setModalId] = useState(0);
+
+  const filters = useMemo(
+    () => ["All", "pending", "purchased", "delivered"],
+    []
+  );
+  const debouncedSearchTerm = useDebounce(search, 300);
+  const BUSINESS = useContext(BusinessContext);
+
+  const handlePurchasedReversal = useCallback(async () => {
     setLoading(true);
     try {
       await changeStatus(ORDERSTATUS.PENDING, modalId);
@@ -47,8 +61,9 @@ const OrdersComponent = () => {
     } finally {
       setLoading(false);
     }
-  };
-  const handleDeliveredReversal = async () => {
+  }, [modalId, queryClient, reverseToPending, toast]);
+
+  const handleDeliveredReversal = useCallback(async () => {
     setLoading(true);
     try {
       await changeStatus(ORDERSTATUS.PURCHASED, modalId);
@@ -68,47 +83,81 @@ const OrdersComponent = () => {
     } finally {
       setLoading(false);
     }
-  };
-  const [search, setSearch] = useState("");
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [filter, setFilter] = useState("All");
-  const [loading, setLoading] = useState(false);
-  const [modalId, setModalId] = useState(0);
-  const filters = ["All", "pending", "purchased", "delivered"];
-  const debouncedSearchTerm = useDebounce(search, 300);
-  const { data, error, isLoading, isSuccess, isError } = useQuery({
-    queryKey: ["orders", filter, debouncedSearchTerm],
-    queryFn: () => getAllOrders(1, search, filter),
-  });
+  }, [modalId, queryClient, reverseToPurchased, toast]);
 
-  const handleDeleteOrder = async (orderId: number) => {
-    setLoading(true);
-    try {
-      await deleteOrder(orderId);
-      queryClient.invalidateQueries({
-        queryKey: ["orders", "purchases", "sales"],
-      });
-      toast({
-        title: "Order deleted successfully",
-        variant: "success",
-      });
-      dialog.close();
-    } catch (error: any) {
-      toast({
-        title: "Failed to delete order",
-        description: error.message ?? "Something went wrong",
-        variant: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleDeleteOrder = useCallback(
+    async (orderId: number) => {
+      setLoading(true);
+      try {
+        await deleteOrder(orderId);
+        queryClient.invalidateQueries({
+          queryKey: ["orders", "purchases", "sales"],
+        });
+        toast({
+          title: "Order deleted successfully",
+          variant: "success",
+        });
+        dialog.close();
+      } catch (error: any) {
+        toast({
+          title: "Failed to delete order",
+          description: error.message ?? "Something went wrong",
+          variant: "error",
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [dialog, queryClient, toast]
+  );
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     await queryClient.refetchQueries({ queryKey: ["orders"] });
     setIsRefreshing(false);
-  };
+  }, [queryClient]);
+
+  const { data, error, isLoading, isSuccess, isError } = useQuery({
+    queryKey: ["orders", filter, debouncedSearchTerm, BUSINESS?.businessId],
+    queryFn: () => getAllOrders(BUSINESS?.businessId, search, filter),
+  });
+
+  const renderOrderItem = useCallback(
+    ({ item }: { item: any }) => {
+      const setModalAndOpenDialog = (d: any) => {
+        setModalId(item.id);
+        d.open();
+      };
+
+      return item.status === "pending" ? (
+        <OrderPendingCard
+          order={item}
+          handleDelete={() => {
+            setModalAndOpenDialog(dialog);
+          }}
+          handleMarkAsPurchased={() => router.push(`/purchaseOrder/${item.id}`)}
+        />
+      ) : item.status === "purchased" ? (
+        <OrderPurchasedCard
+          order={item}
+          handleMarkAsDelivered={() => {
+            router.push(`/saleOrder/${item.id}`);
+          }}
+          handleReverseToPending={() => {
+            setModalAndOpenDialog(reverseToPending);
+          }}
+        />
+      ) : item.status === "delivered" ? (
+        <OrderDeliveredCard
+          order={item}
+          handleReverseToPurchased={() => {
+            setModalAndOpenDialog(reverseToPurchased);
+          }}
+        />
+      ) : null;
+    },
+    [dialog, reverseToPending, reverseToPurchased]
+  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -147,6 +196,7 @@ const OrdersComponent = () => {
           );
         }}
       />
+
       {isLoading && (
         <View
           style={{
@@ -214,7 +264,7 @@ const OrdersComponent = () => {
         </>
       )}
       {isSuccess && data.length !== 0 && (
-        <View style={{ flex: 1}}>
+        <View style={{ flex: 1 }}>
           <FlatList
             data={data}
             keyExtractor={(item) => item.id.toString()}
@@ -225,39 +275,7 @@ const OrdersComponent = () => {
                 onRefresh={handleRefresh}
               />
             }
-            renderItem={({ item }) => {
-              return item.status === "pending" ? (
-                <OrderPendingCard
-                  order={item}
-                  handleDelete={() => {
-                    setModalId(item.id);
-                    dialog.open();
-                  }}
-                  handleMarkAsPurchased={() =>
-                    router.push(`/purchaseOrder/${item.id}`)
-                  }
-                />
-              ) : item.status === "purchased" ? (
-                <OrderPurchasedCard
-                  order={item}
-                  handleMarkAsDelivered={() => {
-                    router.push(`/saleOrder/${item.id}`);
-                  }}
-                  handleReverseToPending={() => {
-                    setModalId(item.id);
-                    reverseToPending.open();
-                  }}
-                />
-              ) : item.status === "delivered" ? (
-                <OrderDeliveredCard
-                  order={item}
-                  handleReverseToPurchased={() => {
-                    setModalId(item.id);
-                    reverseToPurchased.open();
-                  }}
-                />
-              ) : null;
-            }}
+            renderItem={renderOrderItem}
           />
           <Button
             variant="default"

@@ -105,11 +105,11 @@ const Business = () => {
   ];
 
   const handleNavigateToPartners = () => {
-    router.push("/partners");
+    router.navigate("/partners");
   };
 
   const handleNavigateToItems = () => {
-    router.push("/items");
+    router.navigate("/items");
   };
 
   return (

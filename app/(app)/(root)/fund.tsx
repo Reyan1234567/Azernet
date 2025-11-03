@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
-import React from "react";
+import React, { useContext } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { useColor } from "@/hooks/useColor";
@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createDeposit } from "@/service/business_cash";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { BusinessContext } from "@/context/businessContext";
 
 const formSchema = z.object({
   amount: z.number().min(1),
@@ -36,10 +37,11 @@ const Fund = () => {
     },
   });
   const textColor = useColor("text");
-  const red = useColor("red");
+  const BUSINESS = useContext(BusinessContext);
+
   const onSubmit = async (data: formType) => {
     try {
-      await createDeposit(1, data.amount, data.description);
+      await createDeposit(BUSINESS?.businessId, data.amount, data.description);
       toast({
         title: "Deposit Successful",
         description: "Your deposit has been added to your business funds.",
@@ -50,12 +52,19 @@ const Fund = () => {
       });
       router.back();
     } catch (e) {
-      toast({
-        title: "Deposit Failed",
-        description:
-          e?.message ?? "Something went wrong while processing your deposit.",
-        variant: "error",
-      });
+      if (e instanceof Error) {
+        toast({
+          title: "Deposit Failed",
+          description: e.message,
+          variant: "error",
+        });
+      } else {
+        toast({
+          title: "Deposit Failed",
+          description: "Something went wrong while processing your deposit.",
+          variant: "error",
+        });
+      }
       console.log(e);
     }
   };
@@ -88,15 +97,11 @@ const Fund = () => {
               text = text.trim().replace(/\D/g, "");
               field.onChange(Number(text));
             }}
-            error={!!errors.amount}
+            error={errors.amount?.message}
           />
         )}
       />
-      {errors.amount && (
-        <Text style={{ color: red, marginLeft: 10 }}>
-          {errors.amount.message}
-        </Text>
-      )}
+
       <Controller
         control={control}
         name="description"
@@ -105,16 +110,12 @@ const Fund = () => {
             label="Descirption"
             placeholder="Enter desciprtion"
             value={field.value}
-            onChange={field.onChange}
-            error={!!errors.description}
+            onChangeText={field.onChange}
+            error={errors.description?.message}
           />
         )}
       />
-      {errors.description && (
-        <Text style={{ color: red, marginLeft: 10 }}>
-          {errors.description.message}
-        </Text>
-      )}
+
       <Button
         style={{ marginTop: 10 }}
         loading={isSubmitting}

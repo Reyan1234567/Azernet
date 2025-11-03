@@ -1,13 +1,14 @@
-import { Icon } from '@/components/ui/icon';
-import { Text } from '@/components/ui/text';
-import { View } from '@/components/ui/view';
-import { ChevronRight } from 'lucide-react-native';
-import React, { createContext, useContext, useState } from 'react';
-import { TouchableOpacity } from 'react-native';
+import { Icon } from "@/components/ui/icon";
+import { Text } from "@/components/ui/text";
+import { View } from "@/components/ui/view";
+import { useColor } from "@/hooks/useColor";
+import { ChevronRight } from "lucide-react-native";
+import React, { createContext, useContext, useState } from "react";
+import { TouchableOpacity, useColorScheme } from "react-native";
 
 // Context for accordion state
 interface AccordionContextType {
-  type: 'single' | 'multiple';
+  type: "single" | "multiple";
   collapsible?: boolean;
   value?: string | string[];
   onValueChange?: (value: string | string[]) => void;
@@ -17,7 +18,7 @@ const AccordionContext = createContext<AccordionContextType | null>(null);
 
 // Main Accordion component
 interface AccordionProps {
-  type: 'single' | 'multiple';
+  type: "single" | "multiple";
   collapsible?: boolean;
   defaultValue?: string | string[];
   value?: string | string[];
@@ -34,7 +35,7 @@ export function Accordion({
   children,
 }: AccordionProps) {
   const [internalValue, setInternalValue] = useState<string | string[]>(
-    defaultValue || (type === 'multiple' ? [] : '')
+    defaultValue || (type === "multiple" ? [] : "")
   );
 
   const value = controlledValue !== undefined ? controlledValue : internalValue;
@@ -45,7 +46,6 @@ export function Accordion({
     }
     onValueChange?.(newValue);
   };
-
   return (
     <AccordionContext.Provider
       value={{
@@ -55,7 +55,7 @@ export function Accordion({
         onValueChange: handleValueChange,
       }}
     >
-      <View style={{ width: '100%' }}>{children}</View>
+      <View style={{ width: "100%" }}>{children}</View>
     </AccordionContext.Provider>
   );
 }
@@ -69,7 +69,7 @@ interface AccordionItemProps {
 export function AccordionItem({ value, children }: AccordionItemProps) {
   const context = useContext(AccordionContext);
   if (!context) {
-    throw new Error('AccordionItem must be used within an Accordion');
+    throw new Error("AccordionItem must be used within an Accordion");
   }
 
   const isOpen = Array.isArray(context.value)
@@ -79,8 +79,8 @@ export function AccordionItem({ value, children }: AccordionItemProps) {
   const toggle = () => {
     if (!context.onValueChange) return;
 
-    if (context.type === 'single') {
-      const newValue = isOpen && context.collapsible ? '' : value;
+    if (context.type === "single") {
+      const newValue = isOpen && context.collapsible ? "" : value;
       context.onValueChange(newValue);
     } else {
       const currentValues = Array.isArray(context.value) ? context.value : [];
@@ -117,28 +117,31 @@ interface AccordionTriggerProps {
 export function AccordionTrigger({ children }: AccordionTriggerProps) {
   const context = useContext(AccordionItemContext);
   if (!context) {
-    throw new Error('AccordionTrigger must be used within an AccordionItem');
+    throw new Error("AccordionTrigger must be used within an AccordionItem");
   }
-
+  const accordionColor=useColor('foreground')
   return (
     <TouchableOpacity
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
         paddingVertical: 6,
       }}
       onPress={context.toggle}
       activeOpacity={0.8}
     >
-      <Text variant='subtitle'>{children}</Text>
-      <Icon
-        name={ChevronRight}
-        size={18}
-        style={{
-          transform: [{ rotate: context.isOpen ? '90deg' : '0deg' }],
-        }}
-      />
+      <Text variant="subtitle">{children}</Text>
+      <View style={{ paddingRight: 50 }}>
+        <Icon
+          name={ChevronRight}
+          size={18}
+          color={accordionColor}
+          style={{
+            transform: [{ rotate: context.isOpen ? "90deg" : "0deg" }],
+          }}
+        />
+      </View>
     </TouchableOpacity>
   );
 }
@@ -152,7 +155,7 @@ interface AccordionContentProps {
 export function AccordionContent({ children, style }: AccordionContentProps) {
   const context = useContext(AccordionItemContext);
   if (!context) {
-    throw new Error('AccordionContent must be used within an AccordionItem');
+    throw new Error("AccordionContent must be used within an AccordionItem");
   }
 
   if (!context.isOpen) {

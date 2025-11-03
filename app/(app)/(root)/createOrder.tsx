@@ -63,7 +63,6 @@ const CreateOrder = () => {
     },
   });
 
-  const primary = useColor("primary");
   const red = useColor("red");
   const textColor = useColor("text");
   const bgColor = useColor("background");
@@ -112,14 +111,27 @@ const CreateOrder = () => {
         variant: "success",
       });
       queryClient.invalidateQueries({
-        queryKey: ["orders", "purchases", "sales"],
+        queryKey: ["orders"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["purchases"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["sales"],
       });
       router.back();
-    } catch (e) {
-      toast({
-        title: "Failed to create order",
-        variant: "error",
-      });
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        toast({
+          title: e.message,
+          variant: "error",
+        });
+      } else {
+        toast({
+          title: "Failed to create order",
+          variant: "error",
+        });
+      }
     }
   };
 

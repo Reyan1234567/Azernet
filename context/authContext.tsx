@@ -1,5 +1,6 @@
-// import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Session } from "@supabase/supabase-js";
+import * as SecureSession from "expo-secure-store";
 import React, {
   createContext,
   useContext,
@@ -8,7 +9,6 @@ import React, {
   useState,
 } from "react";
 import { supabase } from "../lib/supabase";
-import { Platform } from "react-native";
 
 // import * as AuthSession from "expo-auth-session";
 
@@ -18,6 +18,7 @@ interface AuthContextValue {
   verifyOtp: (phone: string, token: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  isLoading: boolean;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(
@@ -25,22 +26,25 @@ export const AuthContext = createContext<AuthContextValue | undefined>(
 );
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  console.log("AUTH PROVIDER RE-RENDERED");
   const [session, setSession] = useState<Session | null>(null);
-
-  // GoogleSignin.configure({
-  //   webClientId: process.env.GOOGLE_WEB_CLIENT_ID,
-  //   offlineAccess: true,
-  // });
+  const [isLoading, setIsLoading] = useState(false);
 
   const initializeSession = async () => {
+    setIsLoading(true);
     const {
       data: { session },
     } = await supabase.auth.getSession();
     setSession(session);
+    setIsLoading(false);
   };
 
   useEffect(() => {
     initializeSession();
+    GoogleSignin.configure({
+      scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       setSession(sess);
     });
@@ -65,47 +69,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      if (Platform.OS === "web") {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: "http://localhost:8081",
-          },
-        });
-        if (error) {
-          console.log(error.message);
-        }
-      } else {
-        // // 1. Check for Play Services
-        // await GoogleSignin.hasPlayServices();
-        // // 2. Get user info and ID token
-        // const userInfo = await GoogleSignin.signIn();
-        // const idToken = userInfo?.data?.idToken;
-        // if (idToken) {
+      // if (Platform.OS === "web") {
+      // const { error } = await supabase.auth.signInWithOAuth({
+      //   provider: "google",
+      //   options: {
+      //     redirectTo: "http://localhost:8081",
+      //   },
+      // });
+      // if (error) {
+      //   console.log(error.message);
+      // }
+      // // 1. Check for Play Services
+      console.log("Before hasPlayServices");
+      await GoogleSignin.hasPlayServices();
+      // // 2. Get user info and ID token
+      const userInfo = await GoogleSignin.signIn();
+      console.log("UserInfo" + userInfo);
+      const idToken = userInfo?.data?.idToken;
+      console.log("idToken" + idToken);
+      if (idToken) {
+        console.log("In the if thing...");
         //   // 3. Sign in with Supabase
-        //   const { data, error } = await supabase.auth.signInWithIdToken({
-        //     provider: "google",
-        //     token: idToken,
-        //   });
-        //   if (error) throw error;
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: idToken,
+        });
+        if (error) throw error;
         //   // SecureStore.setItem("userId", data.user.id);
-        //   console.log("Google sign-in successful!", data.user);
-        // }
+        console.log("Google sign-in successful!", data.user);
       }
     } catch (error) {
       console.error("Google sign-in error:", error);
+      throw new Error(
+        error instanceof Error ? error.message : "Couldn't authenticate you"
+      );
     }
   };
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
+    SecureSession.deleteItemAsync("businessId");
     if (error) throw error;
     setSession(null);
   };
 
   const value = useMemo(
-    () => ({ session, phoneSignIn, verifyOtp, signInWithGoogle, signOut }),
-    [session]
+    () => ({
+      session,
+      phoneSignIn,
+      verifyOtp,
+      signInWithGoogle,
+      signOut,
+      isLoading,
+    }),
+    [isLoading, session]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

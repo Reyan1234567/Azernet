@@ -28,7 +28,10 @@ const AmountUnpaid = () => {
         variant: "success",
       });
       queryClient.invalidateQueries({
-        queryKey: ["orders", "purchases"],
+        queryKey: ["orders"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["purchases"],
       });
     } catch (e) {
       console.error(e);

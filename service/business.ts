@@ -17,7 +17,7 @@ export const getBusinessIds = async (
   if (error) {
     throw new Error("some error occured");
   }
-  return data
+  return data;
 };
 
 export const businessIdExist = async (business_id_arg: number) => {
@@ -30,4 +30,17 @@ export const businessIdExist = async (business_id_arg: number) => {
     throw new Error(error.message);
   }
   return data;
+};
+
+export const createBusinesses = async (
+  business_name_arg: string,
+  user_id_arg: number
+) => {
+  let { data, error } = await supabase.rpc("create_business_1", {
+    business_name_arg,
+    user_id_arg,
+  });
+  if (error) {
+    throw new Error(error.message);
+  } else return data;
 };

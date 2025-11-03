@@ -72,6 +72,8 @@ const lightColors = {
 
   // Indigo accent for system features
   indigo: '#5856D6',
+
+  accordion: ""
 };
 
 const darkColors = {
