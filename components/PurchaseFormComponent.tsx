@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getListOfPartners } from "@/service/transaction";
-import { useToast } from "./ui/toast";
+import SnackBarToast from "./SnackBarToast";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Button } from "./ui/button";
 import { Text } from "./ui/text";
 import { Input } from "./ui/input";
@@ -25,6 +25,7 @@ import { bigNumber, ORDERSTATUS } from "@/constants";
 import { router } from "expo-router";
 import { useColor } from "@/hooks/useColor";
 import { Spinner } from "./ui/spinner";
+import { useState } from "react";
 
 interface PurchaseFormComponentProps {
   id: number;
@@ -62,11 +63,8 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
 
   type PurchaseFormData = z.infer<typeof purchaseFormSchema>;
 
-  const { toast } = useToast();
+  const length = useBottomTabBarHeight();
   const textColor = useColor("text");
-  const primary = useColor("primary");
-  const [quantity, setQuantity] = useState(0);
-  const [pricePerItem, setPricePerItem] = useState(0);
 
   const queryClient = useQueryClient();
   const {
@@ -82,8 +80,9 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
     },
   });
 
-  const [selectedSupplier, setSelectedSupplier] =
-    React.useState<OptionType | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<OptionType | null>(
+    null
+  );
 
   // Fetch suppliers
   const {
@@ -107,9 +106,10 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
         data.unpaidAmountP,
         data.supplierId
       );
-      toast({
-        title: "Purchase data submitted successfully",
-        variant: "success",
+      SnackBarToast({
+        message: "Purchase data submitted successfully",
+        isSuccess: true,
+        marginBottom: length,
       });
       queryClient.invalidateQueries({
         queryKey: ["orders"],
@@ -122,10 +122,10 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
       });
       router.back();
     } catch (error: any) {
-      toast({
-        title: "Failed to submit purchase data",
-        description: error.message ?? "Something went wrong",
-        variant: "error",
+      SnackBarToast({
+        message: error.message ?? "Failed to submit purchase data",
+        isSuccess: false,
+        marginBottom: length,
       });
     }
   };
@@ -186,7 +186,7 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
                 field.onChange(Number(option?.value));
               }}
             >
-              <ComboboxTrigger error={!!errors.supplierId}>
+              <ComboboxTrigger error={errors.supplierId?.message}>
                 <ComboboxValue placeholder="Select supplier..." />
               </ComboboxTrigger>
               <ComboboxContent>
@@ -215,11 +215,6 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
           </View>
         )}
       />
-      {errors.supplierId && (
-        <Text style={{ color: "red", fontSize: 14 }}>
-          {errors.supplierId.message}
-        </Text>
-      )}
 
       <Controller
         control={control}
@@ -231,7 +226,6 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
             value={field.value.toString()}
             onChangeText={(text) => {
               text = text.trim().replace(/\D/g, "");
-              setPricePerItem(Number(text));
               field.onChange(Number(text));
             }}
             keyboardType="numeric"
@@ -250,7 +244,6 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
             value={field.value.toString()}
             onChangeText={(text) => {
               text = text.trim().replace(/\D/g, "");
-              setQuantity(Number(text));
               field.onChange(Number(text));
             }}
             keyboardType="numeric"

@@ -6,8 +6,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { SearchBar } from "./ui/searchbar";
 import { Button } from "./ui/button";
 import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
-import { Plus } from "lucide-react-native";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useColor } from "@/hooks/useColor";
+import SnackBarToast from "./SnackBarToast";
 import { router } from "expo-router";
 import { Spinner, LoadingOverlay } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
@@ -18,14 +19,14 @@ import OrderPurchasedCard from "./OrderPurchasedCard";
 import OrderDeliveredCard from "./OrderDeliveredCard";
 import { ORDERSTATUS } from "@/constants";
 import { BusinessContext } from "@/context/businessContext";
+import AddButton from "./addButton";
 
 const OrdersComponent = () => {
-  const { toast } = useToast();
+  const length = useBottomTabBarHeight();
   const dialog = useAlertDialog();
   const reverseToPending = useAlertDialog();
   const reverseToPurchased = useAlertDialog();
   const queryClient = useQueryClient();
-  const primaryColor = useColor("primary");
   const red = useColor("red");
 
   const [search, setSearch] = useState("");
@@ -45,45 +46,49 @@ const OrdersComponent = () => {
     setLoading(true);
     try {
       await changeStatus(ORDERSTATUS.PENDING, modalId);
-      toast({
-        title: "Purchase reversal successful",
-        variant: "success",
+      SnackBarToast({
+        message: "Purchase reversal successful",
+        isSuccess: true,
+        marginBottom: length,
       });
       queryClient.invalidateQueries({
         queryKey: ["orders", "purchases", "sales"],
       });
       reverseToPending.close();
     } catch (e) {
-      toast({
-        title: "Failed to reverse purchase",
-        variant: "error",
+      SnackBarToast({
+        message: "Failed to reverse purchase",
+        isSuccess: false,
+        marginBottom: length,
       });
     } finally {
       setLoading(false);
     }
-  }, [modalId, queryClient, reverseToPending, toast]);
+  }, [modalId, queryClient, reverseToPending, length]);
 
   const handleDeliveredReversal = useCallback(async () => {
     setLoading(true);
     try {
       await changeStatus(ORDERSTATUS.PURCHASED, modalId);
-      toast({
-        title: "Delivered reversal successful",
-        variant: "success",
+      SnackBarToast({
+        message: "Delivered reversal successful",
+        isSuccess: true,
+        marginBottom: length,
       });
       queryClient.invalidateQueries({
         queryKey: ["orders", "purchases", "sales"],
       });
       reverseToPurchased.close();
     } catch (e) {
-      toast({
-        title: "Failed to reverse delivered status",
-        variant: "error",
+      SnackBarToast({
+        message: "Failed to reverse delivered status",
+        isSuccess: false,
+        marginBottom: length,
       });
     } finally {
       setLoading(false);
     }
-  }, [modalId, queryClient, reverseToPurchased, toast]);
+  }, [length, modalId, queryClient, reverseToPurchased]);
 
   const handleDeleteOrder = useCallback(
     async (orderId: number) => {
@@ -93,22 +98,23 @@ const OrdersComponent = () => {
         queryClient.invalidateQueries({
           queryKey: ["orders", "purchases", "sales"],
         });
-        toast({
-          title: "Order deleted successfully",
-          variant: "success",
+        SnackBarToast({
+          message: "Order deleted successfully",
+          isSuccess: true,
+          marginBottom: length,
         });
         dialog.close();
       } catch (error: any) {
-        toast({
-          title: "Failed to delete order",
-          description: error.message ?? "Something went wrong",
-          variant: "error",
+        SnackBarToast({
+          message: error.message ?? "Failed to delete order",
+          isSuccess: false,
+          marginBottom: length,
         });
       } finally {
         setLoading(false);
       }
     },
-    [dialog, queryClient, toast]
+    [dialog, length, queryClient]
   );
 
   const handleRefresh = useCallback(async () => {
@@ -117,9 +123,10 @@ const OrdersComponent = () => {
     setIsRefreshing(false);
   }, [queryClient]);
 
-  const { data, error, isLoading, isSuccess, isError } = useQuery({
-    queryKey: ["orders", filter, debouncedSearchTerm, BUSINESS?.businessId],
-    queryFn: () => getAllOrders(BUSINESS?.businessId, search, filter),
+  const { data, isLoading, isError, error, isSuccess } = useQuery({
+    queryKey: ["orders", BUSINESS?.businessId, debouncedSearchTerm, filter],
+    queryFn: () =>
+      getAllOrders(BUSINESS?.businessId, debouncedSearchTerm, filter),
   });
 
   const renderOrderItem = useCallback(
@@ -248,17 +255,10 @@ const OrdersComponent = () => {
               zIndex: 1000,
             }}
           >
-            <Button
-              variant="default"
-              size="lg"
-              icon={Plus}
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: primaryColor,
+            <AddButton
+              onPress={() => {
+                router.push("/createOrder");
               }}
-              onPress={() => router.push("/createOrder")}
             />
           </View>
         </>
@@ -277,21 +277,16 @@ const OrdersComponent = () => {
             }
             renderItem={renderOrderItem}
           />
-          <Button
-            variant="default"
-            size="lg"
-            icon={Plus}
+          <View
             style={{
               position: "absolute",
               bottom: 15,
               right: 15,
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: primaryColor,
+              zIndex: 1000,
             }}
-            onPress={() => router.push("/createOrder")}
-          />
+          >
+            <AddButton onPress={() => router.push("/createOrder")} />
+          </View>
           <AlertDialog
             isVisible={dialog.isVisible}
             onClose={dialog.close}

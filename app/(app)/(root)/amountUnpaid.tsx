@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { subtractUnpaidAmountPurchase } from "@/service/purchase";
 import { useToast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
+import SnackBarToast from "@/components/SnackBarToast";
 
 const AmountUnpaid = () => {
   const { id, debt } = useLocalSearchParams();
@@ -17,15 +18,16 @@ const AmountUnpaid = () => {
   const [loading, setLoading] = useState(false);
 
   const textColor = useColor("text");
-  const {toast}=useToast();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const handleSubmit = async (id: number, debt: number) => {
     try {
       setLoading(true);
       await subtractUnpaidAmountPurchase(id, debt);
-      toast({
-        title: "Amount subtracted successfully",
-        variant: "success",
+      SnackBarToast({
+        message: "Amount Subtracted Successfully!",
+        isSuccess: true,
+        marginBottom: length,
       });
       queryClient.invalidateQueries({
         queryKey: ["orders"],
@@ -35,9 +37,10 @@ const AmountUnpaid = () => {
       });
     } catch (e) {
       console.error(e);
-      toast({
-        title: "Failed to subtract amount",
-        variant: "error",
+      SnackBarToast({
+        message: "Failed to Subtract amount",
+        isSuccess: true,
+        marginBottom: length,
       });
     } finally {
       setLoading(false);
@@ -85,7 +88,12 @@ const AmountUnpaid = () => {
             Remove all Debt
           </Button>
           <Separator />
-          <Button loading={loading} onPress={()=>handleSubmit(Number(id), amountLeft)}>Save</Button>
+          <Button
+            loading={loading}
+            onPress={() => handleSubmit(Number(id), amountLeft)}
+          >
+            Save
+          </Button>
         </View>
       </KeyboardAvoidingView>
     </>

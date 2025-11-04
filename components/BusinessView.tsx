@@ -32,7 +32,7 @@ const BusinessView = ({ name, onClick, icon, selected }: busV) => {
             <Briefcase color={textColor} />
           )}
         </View>
-        <Text variant="" style={{ color: textColor }}>
+        <Text variant="caption" style={{ color: textColor }}>
           {name}
         </Text>
       </View>

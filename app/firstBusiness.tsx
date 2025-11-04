@@ -2,50 +2,49 @@ import { View } from "react-native";
 import React, { useContext, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Store} from "lucide-react-native";
+import { Store } from "lucide-react-native";
 import { createBusinesses } from "@/service/business";
-import { AuthContext } from "@/context/authContext";
+import { useAuth } from "@/context/authContext";
 import { useToast } from "@/components/ui/toast";
 import { BusinessContext } from "@/context/businessContext";
 import { useColor } from "@/hooks/useColor";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "../components/ui/text";
+import SnackBarToast from "@/components/SnackBarToast";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 const Business = () => {
   const [businessName, setBusinesName] = useState("");
   const [loading, setLoading] = useState(false);
+  const length=useBottomTabBarHeight()
   const textColor = useColor("text");
-  const AUTH = useContext(AuthContext);
+  const AUTH = useAuth();
   const BUSINESS = useContext(BusinessContext);
-  const { toast } = useToast();
   const handleCreateBusinesses = async (name: string, id: number) => {
     try {
       setLoading(true);
       const newId = await createBusinesses(name, id);
-      toast({
-        title: "Business Created!",
-        description: "Your business has been successfully registered",
-        duration: 3000,
-        variant: "success",
+      SnackBarToast({
+        message: "Business Created!",
+        isSuccess: true,
+        marginBottom: length,
       });
-      console.log("About to set context")
+      console.log("About to set context");
       BUSINESS?.setBusiness(newId.toString());
     } catch (e) {
       if (e instanceof Error) {
-        toast({
-          title: "Failed to Create Business",
-          description: e.message,
-          duration: 5000,
-          variant: "error",
+        SnackBarToast({
+          message: e.message,
+          isSuccess: false,
+          marginBottom: length,
         });
         console.log(e.message);
         console.log(e.stack);
       } else {
-        toast({
-          title: "Failed to Create Business",
-          description: "Something went wrong when creating business",
-          duration: 5000,
-          variant: "error",
+        SnackBarToast({
+          message: "Failed to create Business",
+          isSuccess: false,
+          marginBottom: length,
         });
       }
     } finally {
@@ -84,7 +83,7 @@ const Business = () => {
         >
           Submit
         </Button>
-        <Button onPress={()=>AUTH?.signOut()}>Signout</Button>
+        <Button onPress={() => AUTH?.signOut()}>Signout</Button>
       </View>
     </SafeAreaView>
   );

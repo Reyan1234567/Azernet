@@ -89,15 +89,15 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
                         name={business.business_name}
                         key={index}
                         onClick={() => {
-                          if (BUSINESS.businessId !== business.id.toString()) {
-                            BUSINESS.setBusiness(business.id.toString());
+                          if (BUSINESS.businessId !== business.id) {
+                            BUSINESS.setBusiness(business.id);
                             // router.canGoBack() && router.dismissAll();
                             router.navigate("/(app)/(root)/(tabs)");
                             setOpen(false);
                           }
                         }}
                         icon={false}
-                        selected={BUSINESS.businessId === String(business.id)}
+                        selected={BUSINESS.businessId === business.id}
                       />
                     ))}
                     <TouchableOpacity

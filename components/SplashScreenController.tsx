@@ -1,12 +1,13 @@
-import { AuthContext } from "@/context/authContext";
+import { useAuth } from "@/context/authContext";
+import { useBusiness } from "@/context/businessContext";
 import { SplashScreen } from "expo-router";
-import { useContext } from "react";
 
 SplashScreen.preventAutoHideAsync();
 
 export function SplashScreenController() {
-  const auth = useContext(AuthContext);
-  if (!auth?.isLoading) {
+  const auth = useAuth();
+  const business = useBusiness();
+  if (!auth.isLoading) {
     SplashScreen.hide();
   }
 

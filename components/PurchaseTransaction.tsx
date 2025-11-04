@@ -1,4 +1,4 @@
-import { FlatList, RefreshControl, View } from "react-native";
+import { FlatList, RefreshControl, ToastAndroid, View } from "react-native";
 import { Text } from "./ui/text";
 import React, { useCallback, useContext, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,9 +15,13 @@ import { useToast } from "./ui/toast";
 import { reversePurchase } from "@/service/reversals";
 import { AlertDialog, useAlertDialog } from "./ui/alert-dialog";
 import { BusinessContext } from "@/context/businessContext";
+import SnackBarToast from "./SnackBarToast";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import AddButton from "./addButton";
 
 const PurchaseTransaction = () => {
   const { toast } = useToast();
+  const length = useBottomTabBarHeight() || 0;
   const queryClient = useQueryClient();
   const primaryColor = useColor("primary");
   const red = useColor("red");
@@ -32,12 +36,12 @@ const PurchaseTransaction = () => {
   const debouncedSearchTerm = useDebounce(search, 300);
   const BUSINESS = useContext(BusinessContext);
 
-  const { data, error, isLoading, isSuccess, isError } = useQuery({
+  const { data, isLoading, isError, error, isSuccess } = useQuery({
     queryKey: [
       "purchaseTransactions",
-      filter,
-      debouncedSearchTerm,
       BUSINESS?.businessId,
+      debouncedSearchTerm,
+      filter,
     ],
     queryFn: () =>
       getAllPurchaseTransactions(BUSINESS?.businessId, search, filter),
@@ -49,16 +53,17 @@ const PurchaseTransaction = () => {
       try {
         await reversePurchase(transactionId);
         queryClient.invalidateQueries({ queryKey: ["purchaseTransactions"] });
-        toast({
-          title: "Purchase reversed successfully",
-          variant: "success",
+        SnackBarToast({
+          message: "Purchase reversed successfully!",
+          isSuccess: true,
+          marginBottom: length,
         });
         dialog.close();
       } catch (error: any) {
-        toast({
-          title: "Failed to reverse purchase",
-          description: error.message ?? "Something went wrong",
-          variant: "error",
+        SnackBarToast({
+          message: error.message ?? "Failed to reverse purchase",
+          isSuccess: false,
+          marginBottom: length,
         });
       } finally {
         setLoading(false);
@@ -83,7 +88,6 @@ const PurchaseTransaction = () => {
           showClearButton={true}
         />
       </View>
-
       <FlatList
         data={filters}
         horizontal
@@ -151,17 +155,10 @@ const PurchaseTransaction = () => {
               zIndex: 1000,
             }}
           >
-            <Button
-              variant="default"
-              size="lg"
-              icon={Plus}
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: primaryColor,
+            <AddButton
+              onPress={() => {
+                router.push("/createPurchaseOrSale?type=purchase");
               }}
-              onPress={() => router.push("/createPurchaseOrSale?type=purchase")}
             />
           </View>
         </View>
@@ -192,27 +189,12 @@ const PurchaseTransaction = () => {
               />
             )}
           />
-          <View
-            style={{
-              position: "absolute",
-              bottom: 15,
-              right: 15,
-              zIndex: 1000,
+
+          <AddButton
+            onPress={() => {
+              router.push("/createPurchaseOrSale?type=purchase");
             }}
-          >
-            <Button
-              variant="default"
-              size="lg"
-              icon={Plus}
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: primaryColor,
-              }}
-              onPress={() => router.push("/createPurchaseOrSale?type=purchase")}
-            />
-          </View>
+          />
         </View>
       ) : null}
       <AlertDialog

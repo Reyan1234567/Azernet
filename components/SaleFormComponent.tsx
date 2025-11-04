@@ -4,6 +4,8 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "./ui/toast";
+import SnackBarToast from "./SnackBarToast";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Button } from "./ui/button";
 import { Text } from "./ui/text";
 import { Input } from "./ui/input";
@@ -45,7 +47,7 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
   type SaleFormData = z.infer<typeof saleFormSchema>;
 
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const length = useBottomTabBarHeight();
   const [quantity, setQuantity] = useState(0);
   const [pricePerItem, setPricePerItem] = useState(0);
   const destructive = useColor("destructive");
@@ -69,9 +71,10 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
         data.pricePerItemS,
         data.unpaidAmountS
       );
-      toast({
-        title: "Sale data submitted successfully",
-        variant: "success",
+      SnackBarToast({
+        message: "Sale data submitted successfully",
+        isSuccess: true,
+        marginBottom: length,
       });
       queryClient.invalidateQueries({
         queryKey: ["orders"],
@@ -84,10 +87,10 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
       });
       router.back();
     } catch (error: any) {
-      toast({
-        title: "Failed to submit sale data",
-        description: error.message ?? "Something went wrong",
-        variant: "error",
+      SnackBarToast({
+        message: error.message ?? "Failed to submit sale data",
+        isSuccess: false,
+        marginBottom: length,
       });
       router.back();
     }

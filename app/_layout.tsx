@@ -1,10 +1,9 @@
 import { SplashScreenController } from "@/components/SplashScreenController";
 import { ToastProvider } from "@/components/ui/toast";
-import { AuthContext, AuthProvider } from "@/context/authContext";
-import { BusinessContext, BusinessProvider } from "@/context/businessContext";
+import { AuthProvider, useAuth } from "@/context/authContext";
+import { BusinessProvider, useBusiness } from "@/context/businessContext";
 import { ThemeProvider } from "@/theme/theme-provider";
 import { Stack } from "expo-router";
-import { useContext } from "react";
 
 export default function Root() {
   return (
@@ -18,13 +17,11 @@ export default function Root() {
 }
 
 function RootNavigator() {
-  const auth = useContext(AuthContext);
-  const business = useContext(BusinessContext);
+  const auth = useAuth();
+  const business = useBusiness();
 
-  console.log(!!auth?.session);
-  console.log(auth?.session);
-
-  console.log(!business?.businessId);
+  console.log("The authsession", !!auth?.session);
+  console.log("The Business Id", !business?.businessId);
   console.log(business?.businessId);
 
   return (
@@ -34,9 +31,12 @@ function RootNavigator() {
           <Stack.Protected guard={!!auth?.session && !!business?.businessId}>
             <Stack.Screen name="(app)" options={{ headerShown: false }} />
           </Stack.Protected>
+          <Stack.Protected guard={!!auth?.session && business.isLoading}>
+            <Stack.Screen name="loading" options={{ headerShown: false }} />
+          </Stack.Protected>
           {/* if value in guard is true then make the screen inside visible */}
           <Stack.Protected guard={!auth?.session}>
-            <Stack.Screen name="login" />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
           </Stack.Protected>
           <Stack.Protected guard={!!auth?.session && !business?.businessId}>
             <Stack.Screen

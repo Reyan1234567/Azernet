@@ -6,20 +6,21 @@ import { getAllSalesTransactions } from "@/service/transaction";
 import { SearchBar } from "./ui/searchbar";
 import { Button } from "./ui/button";
 import SalesCard from "./SalesCard";
-import { Plus } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 import { router } from "expo-router";
 import { Spinner, LoadingOverlay } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useToast } from "./ui/toast";
+import SnackBarToast from "./SnackBarToast";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { reverseSale } from "@/service/reversals";
 import { AlertDialog, useAlertDialog } from "./ui/alert-dialog";
 import { BusinessContext } from "@/context/businessContext";
+import AddButton from "./addButton";
 
 const SalesTransaction = () => {
-  const { toast } = useToast();
+  const length = useBottomTabBarHeight();
   const queryClient = useQueryClient();
-  const primaryColor = useColor("primary");
   const red = useColor("red");
   const [search, setSearch] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -31,12 +32,12 @@ const SalesTransaction = () => {
   const debouncedSearchTerm = useDebounce(search, 300);
   const BUSINESS = useContext(BusinessContext);
 
-  const { data, error, isLoading, isSuccess, isError } = useQuery({
+  const { data, isLoading, isError, error, isSuccess } = useQuery({
     queryKey: [
       "salesTransactions",
-      filter,
-      debouncedSearchTerm,
       BUSINESS?.businessId,
+      debouncedSearchTerm,
+      filter,
     ],
     queryFn: () =>
       getAllSalesTransactions(BUSINESS?.businessId, search, filter),
@@ -48,22 +49,23 @@ const SalesTransaction = () => {
       try {
         await reverseSale(transactionId);
         queryClient.invalidateQueries({ queryKey: ["salesTransactions"] });
-        toast({
-          title: "Sale reversed successfully",
-          variant: "success",
+        SnackBarToast({
+          message: "Sale reversed successfully",
+          isSuccess: true,
+          marginBottom: length,
         });
         dialog.close();
       } catch (error: any) {
-        toast({
-          title: "Failed to reverse sale",
-          description: error.message ?? "Something went wrong",
-          variant: "error",
+        SnackBarToast({
+          message: error.message ?? "Failed to reverse sale",
+          isSuccess: false,
+          marginBottom: length,
         });
       } finally {
         setLoading(false);
       }
     },
-    [dialog, queryClient, toast]
+    [dialog, length, queryClient]
   );
 
   const handleRefresh = useCallback(async () => {
@@ -121,7 +123,7 @@ const SalesTransaction = () => {
             onPress={() => setFilter(item)}
             style={{ minWidth: 80 }}
           >
-           {item}
+            {item}
           </Button>
         )}
       />
@@ -146,9 +148,8 @@ const SalesTransaction = () => {
             flex: 1,
           }}
         >
-           {" "}
           <Text style={{ color: red }}>
-            {error.message ?? "Something went wrong"} {" "}
+            {error.message ?? "Something went wrong"}
           </Text>
         </View>
       ) : isSuccess && data?.length === 0 ? (
@@ -160,7 +161,7 @@ const SalesTransaction = () => {
             flex: 1,
           }}
         >
-            <Text variant="caption">{"No sales found"}</Text> {" "}
+            <Text variant="caption">No sales found</Text> 
           <View
             style={{
               position: "absolute",
@@ -169,24 +170,17 @@ const SalesTransaction = () => {
               zIndex: 1000,
             }}
           >
-            <Button
-              variant="default"
-              size="lg"
-              icon={Plus}
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: primaryColor,
+            <AddButton
+              onPress={() => {
+                router.push("/createPurchaseOrSale?type=sale");
               }}
-              onPress={() => router.push("/createPurchaseOrSale?type=sale")}
             />
-             {" "}
+             
           </View>
         </View>
       ) : isSuccess ? (
         <View style={{ flex: 1 }}>
-           {" "}
+           
           <FlatList
             data={data}
             keyExtractor={(item) => item.id.toString()}
@@ -199,7 +193,7 @@ const SalesTransaction = () => {
             }
             renderItem={renderSaleItem}
           />
-           {" "}
+           
           <View
             style={{
               position: "absolute",
@@ -208,19 +202,11 @@ const SalesTransaction = () => {
               zIndex: 1000,
             }}
           >
-            <Button
-              variant="default"
-              size="lg"
-              icon={Plus}
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: primaryColor,
+            <AddButton
+              onPress={() => {
+                router.push("/createPurchaseOrSale?type=sale");
               }}
-              onPress={() => router.push("/createPurchaseOrSale?type=sale")}
             />
-             {" "}
           </View>
         </View>
       ) : null}

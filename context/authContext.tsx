@@ -28,18 +28,18 @@ export const AuthContext = createContext<AuthContextValue | undefined>(
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   console.log("AUTH PROVIDER RE-RENDERED");
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const initializeSession = async () => {
-    setIsLoading(true);
     const {
       data: { session },
     } = await supabase.auth.getSession();
     setSession(session);
-    setIsLoading(false);
+    setTimeout(() => setIsLoading(false), 200);
   };
 
   useEffect(() => {
+    console.log("In the useEffect of the Session");
     initializeSession();
     GoogleSignin.configure({
       scopes: ["https://www.googleapis.com/auth/drive.readonly"],
@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       setSession(sess);
     });
+    // setIsLoading(false);
 
     return () => sub.subscription.unsubscribe();
   }, []);

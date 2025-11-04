@@ -2,9 +2,9 @@ import { View } from "react-native";
 import React, { useContext, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Store} from "lucide-react-native";
+import { Store } from "lucide-react-native";
 import { createBusinesses } from "@/service/business";
-import { AuthContext } from "@/context/authContext";
+import { useAuth } from "@/context/authContext";
 import { useToast } from "@/components/ui/toast";
 import { BusinessContext } from "@/context/businessContext";
 import { useColor } from "@/hooks/useColor";
@@ -15,7 +15,7 @@ const Business = () => {
   const [businessName, setBusinesName] = useState("");
   const [loading, setLoading] = useState(false);
   const textColor = useColor("text");
-  const AUTH = useContext(AuthContext);
+  const AUTH = useAuth();
   const BUSINESS = useContext(BusinessContext);
   const { toast } = useToast();
   const handleCreateBusinesses = async (name: string, id: number) => {
@@ -28,7 +28,7 @@ const Business = () => {
         duration: 3000,
         variant: "success",
       });
-      console.log("About to set context")
+      console.log("About to set context");
       BUSINESS?.setBusiness(newId.toString());
     } catch (e) {
       if (e instanceof Error) {
@@ -84,7 +84,7 @@ const Business = () => {
         >
           Submit
         </Button>
-        <Button onPress={()=>AUTH?.signOut()}>Signout</Button>
+        <Button onPress={() => AUTH?.signOut()}>Signout</Button>
       </View>
     </SafeAreaView>
   );
