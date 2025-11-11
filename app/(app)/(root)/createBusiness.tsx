@@ -1,12 +1,12 @@
 import { View } from "react-native";
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Store } from "lucide-react-native";
 import { createBusinesses } from "@/service/business";
 import { useAuth } from "@/context/authContext";
 import { useToast } from "@/components/ui/toast";
-import { BusinessContext } from "@/context/businessContext";
+import { useBusiness } from "@/context/businessContext";
 import { useColor } from "@/hooks/useColor";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "../../../components/ui/text";
@@ -16,7 +16,7 @@ const Business = () => {
   const [loading, setLoading] = useState(false);
   const textColor = useColor("text");
   const AUTH = useAuth();
-  const BUSINESS = useContext(BusinessContext);
+  const BUSINESS = useBusiness();
   const { toast } = useToast();
   const handleCreateBusinesses = async (name: string, id: number) => {
     try {
@@ -84,7 +84,7 @@ const Business = () => {
         >
           Submit
         </Button>
-        <Button onPress={() => AUTH?.signOut()}>Signout</Button>
+        {/* <Button onPress={() => AUTH?.signOut()}>Signout</Button> */}
       </View>
     </SafeAreaView>
   );

@@ -1,10 +1,21 @@
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
+import { Button } from "@/components/ui/button";
+
 import { useColor } from "@/hooks/useColor";
-import React, { useContext } from "react";
+import { Image } from "@/components/ui/image";
+
+import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
-import { Plus, User, UserPlus, Zap } from "lucide-react-native";
+import {
+  ArrowRightFromLine,
+  PersonStanding,
+  Plus,
+  User,
+  UserPlus,
+  Zap,
+} from "lucide-react-native";
 import { Separator } from "./ui/separator";
 import {
   Accordion,
@@ -13,8 +24,10 @@ import {
   AccordionTrigger,
 } from "./ui/accordion";
 import BusinessView from "./BusinessView";
-import { BusinessContext } from "@/context/businessContext";
+import { useBusiness } from "@/context/businessContext";
 import { router } from "expo-router";
+import { useAuth } from "@/context/authContext";
+import { ScrollView } from "react-native-gesture-handler";
 interface sheetInterface {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -29,8 +42,8 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
     { icon: UserPlus, label: "Invite Friends" },
     { icon: Zap, label: "Telegram Features" },
   ];
-  const BUSINESS = useContext(BusinessContext);
-  console.log(BUSINESS.businesses);
+  const BUSINESS = useBusiness();
+  const AUTH = useAuth();
   return (
     <Sheet open={open} onOpenChange={setOpen} side="left">
       <SheetContent
@@ -42,22 +55,39 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
           paddingHorizontal: 0,
         }}
       >
-        <View>
+        <View style={{ flex: 1 }}>
           <View style={styles.header}>
-            <View style={[styles.avatar, { backgroundColor: cardColor }]}>
-              <Text style={[styles.avatarText, { color: textColor }]}>RB</Text>
-            </View>
+            {AUTH.session?.user.user_metadata.picture ? (
+              <View style={{ marginRight: 12 }}>
+                <Image
+                  source={{
+                    uri: AUTH.session?.user.user_metadata.picture,
+                  }}
+                  variant="circle"
+                  width={50}
+                  aspectRatio={1}
+                />
+              </View>
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: cardColor }]}>
+                <Text style={[styles.avatarText, { color: textColor }]}>
+                  {AUTH.session?.user.user_metadata.name.slice(0, 1) ?? "!"}
+                </Text>
+              </View>
+            )}
             <View style={styles.userInfo}>
               <Text style={[styles.userName, { color: textColor }]}>
-                Reyan B
+                {AUTH.session?.user.user_metadata.name}
               </Text>
-              <Text style={[styles.userPhone, { color: mutedColor }]}>
-                +251 978344283
-              </Text>
+              {AUTH.session?.user.phone && (
+                <Text style={[styles.userPhone, { color: mutedColor }]}>
+                  +251 978344283
+                </Text>
+              )}
             </View>
           </View>
           <Separator />
-          <View style={styles.menuSection}>
+          <ScrollView style={styles.menuSection}>
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => console.log(`Pressed:`)}
@@ -71,7 +101,7 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
                 My account
               </Text>
             </TouchableOpacity>
-            <Accordion type="single" collapsible defaultValue="item-1">
+            <Accordion type="single" collapsible>
               <AccordionItem value="item-1">
                 <AccordionTrigger>
                   <BusinessView
@@ -123,30 +153,27 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
-          </View>
+          </ScrollView>
+        </View>
+        <View>
           <Separator />
           <View style={styles.footer}>
-            {footerItems.map((item, index) => {
-              const IconComponent = item.icon;
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.footerItem}
-                  onPress={() => console.log(`Pressed: ${item.label}`)}
-                >
-                  <IconComponent size={18} color={mutedColor} />
-                  <Text style={[styles.footerLabel, { color: mutedColor }]}>
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+            <Button style={{ borderRadius: 5, marginBottom: 12 }}>
+              <User size={18} style={{ marginRight: 8 }} />
+              <Text>My Profile</Text>
+            </Button>
+            <View style={styles.contactInfo}>
+              <Text style={[styles.contactText, { color: mutedColor }]}>
+                @reyanber
+              </Text>
+              <Text style={[styles.contactText, { color: mutedColor, marginHorizontal: 8 }]}>
+                •
+              </Text>
+              <Text style={[styles.contactText, { color: mutedColor }]}>
+                0978344283
+              </Text>
+            </View>
           </View>
-        </View>
-        <View style={{ padding: 10, paddingTop: 30 }}>
-          <Text style={[styles.footerLabel, { color: mutedColor }]}>
-            @reyanber . 0978344283
-          </Text>
         </View>
       </SheetContent>
     </Sheet>
@@ -186,6 +213,7 @@ const styles = StyleSheet.create({
   },
   menuSection: {
     paddingVertical: 8,
+    flex: 1,
   },
   menuItem: {
     flexDirection: "row",
@@ -206,9 +234,9 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   footer: {
-    borderTopWidth: 1,
     paddingTop: 16,
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   footerItem: {
     flexDirection: "row",
@@ -218,5 +246,15 @@ const styles = StyleSheet.create({
   footerLabel: {
     fontSize: 14,
     marginLeft: 12,
+  },
+  contactInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 12,
+  },
+  contactText: {
+    fontSize: 13,
+    textAlign: "center",
   },
 });

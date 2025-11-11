@@ -2,7 +2,6 @@ import { StyleSheet, ScrollView } from "react-native";
 import React, { useContext, useState, useMemo } from "react";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import { useRouter } from "expo-router";
 import { useColor } from "@/hooks/useColor";
 import {
   ShoppingCart,
@@ -19,6 +18,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { DatePicker } from "@/components/ui/date-picker";
 import Currency from "@/components/currency";
 import { BusinessContext } from "@/context/businessContext";
+import { getInvetoryInfo } from "@/service/item";
+import InventoryCard from "@/components/InventoryCard";
 
 const Index = () => {
   const bgColor = useColor("background");
@@ -29,12 +30,18 @@ const Index = () => {
   const BUSINESS = useContext(BusinessContext);
   const { data, isLoading, isError, error, isSuccess } = useQuery({
     queryKey: ["dashboard", selectedDate, BUSINESS?.businessId],
-    queryFn: () =>
-      getDashboardData(BUSINESS?.businessId, selectedDate ?? new Date()),
+    queryFn: async () => {
+      const [card, inv] = await Promise.allSettled([
+        getDashboardData(BUSINESS?.businessId, selectedDate ?? new Date()),
+        getInvetoryInfo(BUSINESS?.businessId, selectedDate ?? new Date()),
+      ]);
+      console.log(card, inv);
+      return { card, inv };
+    },
   });
 
   // Use useMemo to extract and stabilize dashboard data access
-  const dashboardData = useMemo(() => data?.[0] || {}, [data]);
+  const dashboardData = useMemo(() => data?.card.value || {}, [data]);
 
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
@@ -229,6 +236,16 @@ const Index = () => {
                 </Text>
               </View>
             </Card>
+            <Text style={{ color: textColor, textAlign:"center"}} variant="title">Inventory</Text>
+            {data.inv.value.map((i, index) => {
+              return (
+                <InventoryCard
+                  itemName={i.item_name}
+                  leftAmount={i.amount_left}
+                  key={index}
+                />
+              );
+            })}
           </View>
         ) : null}
       </ScrollView>
