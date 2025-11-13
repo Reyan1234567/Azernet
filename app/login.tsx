@@ -5,7 +5,6 @@ import { router } from "expo-router";
 import { statusCodes } from "@react-native-google-signin/google-signin";
 import SnackBarToast from "@/components/SnackBarToast";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View } from "react-native";
 import { Text } from "@/components/ui/text";
 import { Image } from "@/components/ui/image";
 

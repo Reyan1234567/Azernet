@@ -32,6 +32,7 @@ export default InventoryCard;
 const styles = StyleSheet.create({
   card: {
     padding: 12,
+    borderRadius:10
   },
   content: {
     flexDirection: "row",

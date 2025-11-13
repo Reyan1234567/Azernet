@@ -20,13 +20,15 @@ import Currency from "@/components/currency";
 import { BusinessContext } from "@/context/businessContext";
 import { getInvetoryInfo } from "@/service/item";
 import InventoryCard from "@/components/InventoryCard";
+import { Picker } from "@/components/ui/picker";
+import { toDays, ToMilliSeconds } from "@/utils/helperfuns";
 
 const Index = () => {
   const bgColor = useColor("background");
   const cardBg = useColor("card");
   const textColor = useColor("text");
   const mutedColor = useColor("textMuted");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const BUSINESS = useContext(BusinessContext);
   const { data, isLoading, isError, error, isSuccess } = useQuery({
     queryKey: ["dashboard", selectedDate, BUSINESS?.businessId],
@@ -40,9 +42,16 @@ const Index = () => {
     },
   });
 
-  // Use useMemo to extract and stabilize dashboard data access
   const dashboardData = useMemo(() => data?.card.value || {}, [data]);
-
+  const options = [
+    { label: "1 week", value: "7" },
+    { label: "2 weeks", value: "14" },
+    { label: "1 month", value: "30" },
+    { label: "2 months", value: "60" },
+    { label: "6 months", value: "180" },
+    { label: "1 year", value: "365" },
+  ];
+  console.log();
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <TopBar />
@@ -50,7 +59,6 @@ const Index = () => {
         contentContainerStyle={[styles.container, { flex: 1 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
           <Text variant="heading" style={{ color: textColor, fontSize: 28 }}>
             Dashboard
@@ -58,13 +66,40 @@ const Index = () => {
           <Text variant="body" style={{ color: mutedColor, marginTop: 4 }}>
             Welcome back! Here&apos;s your business overview
           </Text>
-          <DatePicker
-            label="Select Date"
-            value={selectedDate}
-            onChange={setSelectedDate}
-            placeholder="Choose a date to filter"
-            style={{ marginTop: 15 }}
-          />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <View style={{ flex: 1 }}>
+              <DatePicker
+                label="Select Date"
+                value={selectedDate}
+                onChange={(date) => {
+                  if (date) {
+                    setSelectedDate(date);
+                  }
+                }}
+                placeholder={"Choose a date to filter"}
+                style={{ marginTop: 15 }}
+                maximumDate={new Date()}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Picker
+                style={{ marginBottom: -15 }}
+                options={options}
+                value={selectedDate?.toDateString()}
+                onValueChange={(value) => {
+                  setSelectedDate(
+                    new Date(Date.now() - ToMilliSeconds(Number(value)))
+                  );
+                }}
+                placeholder={
+                  toDays(Date.now() - selectedDate.getTime()) === 0
+                    ? "Select Duration"
+                    : toDays(Date.now() - selectedDate.getTime()).toString() +
+                      " Days ago"
+                }
+              />
+            </View>
+          </View>
         </View>
 
         {isLoading ? (
@@ -94,7 +129,6 @@ const Index = () => {
           </View>
         ) : isSuccess ? (
           <View style={styles.statsGrid}>
-            {/* Total Revenue Card */}
             <Card
               style={{
                 backgroundColor: cardBg,
@@ -135,10 +169,11 @@ const Index = () => {
 
             {/* Total Orders Card */}
             <Card
-              style={[
-                styles.statCard,
-                { backgroundColor: cardBg, width: "fit-content" },
-              ]}
+              style={{
+                ...styles.statCard,
+                backgroundColor: cardBg,
+                width: "auto",
+              }}
             >
               <View style={styles.statContent}>
                 <View
@@ -170,7 +205,7 @@ const Index = () => {
             </Card>
 
             {/* Items Sold Card */}
-            <Card style={[styles.statCard, { backgroundColor: cardBg }]}>
+            <Card style={{ ...styles.statCard, backgroundColor: cardBg }}>
               <View style={styles.statContent}>
                 <View
                   style={[
@@ -201,7 +236,7 @@ const Index = () => {
             </Card>
 
             {/* Total Profit Card */}
-            <Card style={[styles.statCard, { backgroundColor: cardBg }]}>
+            <Card style={{ ...styles.statCard, backgroundColor: cardBg }}>
               <View style={styles.statContent}>
                 <View
                   style={[
@@ -236,16 +271,25 @@ const Index = () => {
                 </Text>
               </View>
             </Card>
-            <Text style={{ color: textColor, textAlign:"center"}} variant="title">Inventory</Text>
-            {data.inv.value.map((i, index) => {
-              return (
-                <InventoryCard
-                  itemName={i.item_name}
-                  leftAmount={i.amount_left}
-                  key={index}
-                />
-              );
-            })}
+            {data.inv.value.length > 0 && (
+              <>
+                <Text
+                  style={{ color: textColor, textAlign: "center" }}
+                  variant="title"
+                >
+                  Inventory
+                </Text>
+                {data.inv.value.map((i, index) => {
+                  return (
+                    <InventoryCard
+                      itemName={i.item_name}
+                      leftAmount={i.amount_left}
+                      key={index}
+                    />
+                  );
+                })}
+              </>
+            )}
           </View>
         ) : null}
       </ScrollView>

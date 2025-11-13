@@ -90,7 +90,13 @@ export const checkItemExistence = async (itemId: number) => {
   return item.data;
 };
 
-export const getInvetoryInfo = async (businessId: number, date: Date) => {
+export const getInvetoryInfo = async (
+  businessId: number | null | undefined,
+  date: Date
+) => {
+  if (!businessId){
+    throw new Error("businessId not found")
+  }
   let { data, error } = await supabase.rpc("get_invetory_info", {
     business_id_arg: businessId,
     date_arg: date,

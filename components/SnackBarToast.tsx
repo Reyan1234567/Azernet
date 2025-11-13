@@ -8,7 +8,7 @@ interface action {
 interface snackbar {
   message: string;
   isSuccess?: boolean;
-  marginBottom: number;
+  marginBottom?: number;
   action?: action;
 }
 const SnackBarToast = ({

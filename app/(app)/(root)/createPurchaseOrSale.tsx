@@ -31,6 +31,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { purchase } from "@/service/purchase";
 import { sell } from "@/service/sale";
 import { BusinessContext } from "@/context/businessContext";
+import SnackBarToast from "@/components/SnackBarToast";
 
 const CreatePurchaseOrSale = () => {
   const [numberOfItems, setNumberOfItems] = useState(0);
@@ -154,14 +155,22 @@ const CreatePurchaseOrSale = () => {
     } catch (e) {
       if (e instanceof Error) {
         console.log(e.message);
-        toast({
-          title: e.message,
-          variant: "error",
+        // toast({
+        //   title: e.message,
+        //   variant: "error",
+        // });
+        SnackBarToast({
+          message: e.message,
+          isSuccess: false,
         });
       } else {
-        toast({
-          title: "An unknown error occurred.",
-          variant: "error",
+        // toast({
+        //   title: "An unknown error occurred.",
+        //   variant: "error",
+        // });
+        SnackBarToast({
+          message: "An unknown error occured!",
+          isSuccess: false,
         });
       }
     }
