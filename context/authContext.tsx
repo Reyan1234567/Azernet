@@ -9,8 +9,14 @@ import React, {
   useState,
 } from "react";
 import { supabase } from "../lib/supabase";
+import { getProfile } from "@/service/profile";
 
 // import * as AuthSession from "expo-auth-session";
+interface userInfo {
+  firstName: string;
+  lastName: string;
+  profilePic: string;
+}
 
 interface AuthContextValue {
   session: Session | null;
@@ -19,6 +25,7 @@ interface AuthContextValue {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   isLoading: boolean;
+  profile: userInfo;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(
@@ -26,15 +33,41 @@ export const AuthContext = createContext<AuthContextValue | undefined>(
 );
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  console.log("AUTH PROVIDER RE-RENDERED");
+  console.warn("AUTH PROVIDER RE-RENDERED");
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profile, setProfile] = useState<userInfo>({
+    firstName: "",
+    lastName: "",
+    profilePic: "",
+  });
 
   const initializeSession = async () => {
+    // console.warn("IN THE INIT SESSION");
     const {
       data: { session },
     } = await supabase.auth.getSession();
+    // console.warn("Session:", session.user.id)
     setSession(session);
+    if (session) {
+      console.warn("SESSION PRESENT")
+      try {
+        const userData = await getProfile(session.user.id);
+        console.warn("user_id: " + session.user.id);
+        setProfile({
+          firstName: userData.first_name,
+          lastName: userData.last_name,
+          profilePic: userData.profile_picture,
+        });
+        console.warn()
+      } catch (e) {
+        if (e instanceof Error) {
+          throw new Error(e.message);
+        } else {
+          throw new Error("Couldn't get userInfo");
+        }
+      }
+    }
     setTimeout(() => setIsLoading(false), 200);
   };
 
@@ -95,7 +128,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           provider: "google",
           token: idToken,
         });
-        if (error) throw error;
+
+        if (error) {
+          console.log("IN THE CATCH");
+          console.log(error);
+          console.log(error.message);
+          throw error;
+        }
         //   // SecureStore.setItem("userId", data.user.id);
         console.log("Google sign-in successful!", data.user);
       }
@@ -122,8 +161,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInWithGoogle,
       signOut,
       isLoading,
+      profile,
     }),
-    [isLoading, session]
+    [isLoading, profile, session]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -29,7 +29,7 @@ const Login = () => {
         });
       } else {
         SnackBarToast({
-          message: "Couldn't authenticate your!",
+          message: "Couldn't authenticate you!",
           isSuccess: false,
           marginBottom: length,
         });

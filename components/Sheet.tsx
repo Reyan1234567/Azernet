@@ -158,7 +158,10 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
         <View>
           <Separator />
           <View style={styles.footer}>
-            <Button style={{ borderRadius: 5, marginBottom: 12 }}>
+            <Button
+              style={{ borderRadius: 5, marginBottom: 12 }}
+              onPress={() => router.navigate("/(app)/(root)/profile")}
+            >
               <User size={18} style={{ marginRight: 8 }} />
               <Text>My Profile</Text>
             </Button>
@@ -166,7 +169,12 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
               <Text style={[styles.contactText, { color: mutedColor }]}>
                 @reyanber
               </Text>
-              <Text style={[styles.contactText, { color: mutedColor, marginHorizontal: 8 }]}>
+              <Text
+                style={[
+                  styles.contactText,
+                  { color: mutedColor, marginHorizontal: 8 },
+                ]}
+              >
                 •
               </Text>
               <Text style={[styles.contactText, { color: mutedColor }]}>
