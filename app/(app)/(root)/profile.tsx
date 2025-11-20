@@ -12,6 +12,7 @@ import { MediaPicker } from "@/components/ui/media-picker";
 import { ImageIcon } from "lucide-react-native";
 import { uriToBlob } from "@/utils/blob";
 import { updateProfile, uploadProfile } from "@/service/profile";
+import SnackBarToast from "@/components/SnackBarToast";
 
 const Profile = () => {
   const formData = z.object({
@@ -27,28 +28,45 @@ const Profile = () => {
     control,
     handleSubmit,
     setValue,
+    getValues,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<profileData>({
     resolver: zodResolver(formData),
     defaultValues: {
       firstName: AUTH.profile.firstName,
       lastName: AUTH.profile.lastName,
-      profilePic: "",
+      profilePic: AUTH.profile.profilePic,
     },
   });
   const [image, setImage] = useState(AUTH.profile.profilePic);
   const onSubmit = async (data: profileData) => {
-    console.log(data);
-    if (data.profilePic) {
-      const res = await uploadProfile(
-        data.profilePic,
-        AUTH?.session?.user?.id ?? ""
-      );
-      await updateProfile(
-        { ...data, profilePicture: res?.fullPath ?? "" },
-        AUTH.session?.user.id ?? ""
-      );
-    } else {
+    console.log("DATA",data);
+    try {
+      if (data.profilePic) {
+        const res = await uploadProfile(
+          data.profilePic,
+          AUTH?.session?.user?.id ?? ""
+        );
+        await updateProfile(
+          { ...data, profilePicture: res?.fullPath ?? "" },
+          AUTH.session?.user.id ?? ""
+        );
+      } else {
+        await updateProfile(
+          { ...data, profilePicture: AUTH.profile.profilePic },
+          AUTH.session?.user.id ?? ""
+        );
+      }
+      SnackBarToast({
+        message: "Profile updated successfully",
+        isSuccess: true,
+      });
+    } catch (error) {
+      console.log(error);
+      SnackBarToast({
+        message: "Failed to update profile",
+        isSuccess: false,
+      });
     }
   };
   return (
@@ -79,6 +97,7 @@ const Profile = () => {
         onSelectionChange={(assets) => {
           const setValues = async () => {
             const picFile = await uriToBlob(assets[0].uri);
+            console.log(picFile)
             setValue("profilePic", picFile);
             setImage(assets[0].uri);
             console.log("Selected images:", assets);
@@ -94,6 +113,7 @@ const Profile = () => {
             label="First Name"
             onChangeText={field.onChange}
             value={field.value}
+            error={errors.firstName?.message}
           />
         )}
       />
@@ -106,13 +126,14 @@ const Profile = () => {
             label="Last Name"
             onChangeText={field.onChange}
             value={field.value}
+            error={errors.lastName?.message}
           />
         )}
       />
 
       <View style={{ marginTop: 30 }}>
         <Button
-          disabled={!isDirty}
+          disabled={!isDirty && getValues("profilePic")===AUTH.profile.profilePic}
           loading={isSubmitting}
           onPress={handleSubmit(onSubmit)}
           style={{ width: "100%", paddingVertical: 12 }}

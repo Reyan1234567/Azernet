@@ -7,11 +7,11 @@ import React, {
   useEffect,
   useMemo,
   useState,
+  useCallback,
 } from "react";
 import { supabase } from "../lib/supabase";
 import { getProfile } from "@/service/profile";
 
-// import * as AuthSession from "expo-auth-session";
 interface userInfo {
   firstName: string;
   lastName: string;
@@ -25,7 +25,8 @@ interface AuthContextValue {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   isLoading: boolean;
-  profile: userInfo;
+  profile: userInfo | null; 
+  refetchProfile: () => Promise<void>; 
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(
@@ -33,58 +34,74 @@ export const AuthContext = createContext<AuthContextValue | undefined>(
 );
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  console.warn("AUTH PROVIDER RE-RENDERED");
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [profile, setProfile] = useState<userInfo>({
-    firstName: "",
-    lastName: "",
-    profilePic: "",
-  });
+  const [profile, setProfile] = useState<userInfo | null>(null);
 
-  const initializeSession = async () => {
-    // console.warn("IN THE INIT SESSION");
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    // console.warn("Session:", session.user.id)
-    setSession(session);
-    if (session) {
-      console.warn("SESSION PRESENT")
-      try {
-        const userData = await getProfile(session.user.id);
-        console.warn("user_id: " + session.user.id);
-        setProfile({
-          firstName: userData.first_name,
-          lastName: userData.last_name,
-          profilePic: userData.profile_picture,
-        });
-        console.warn()
-      } catch (e) {
-        if (e instanceof Error) {
-          throw new Error(e.message);
-        } else {
-          throw new Error("Couldn't get userInfo");
-        }
-      }
+  const fetchUserProfile = useCallback(async (currentSession: Session | null) => {
+    if (!currentSession?.user?.id) {
+      setProfile(null);
+      return;
     }
-    setTimeout(() => setIsLoading(false), 200);
-  };
 
+    try {
+      const userData = await getProfile(currentSession.user.id);
+      setProfile({
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+        profilePic: userData.profile_picture,
+      });
+    } catch (e) {
+      console.error("Failed to fetch profile:", e);
+    }
+  }, []);
+
+  // 2. Initialization and Event Listeners
   useEffect(() => {
-    console.log("In the useEffect of the Session");
-    initializeSession();
+    let mounted = true;
+
+    const initialize = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        setSession(initialSession);
+        
+        if (initialSession) {
+          await fetchUserProfile(initialSession);
+        }
+      } catch (error) {
+        console.error("Init session failed", error);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+
+    initialize();
+
     GoogleSignin.configure({
       scopes: ["https://www.googleapis.com/auth/drive.readonly"],
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
-      setSession(sess);
-    });
-    // setIsLoading(false);
 
-    return () => sub.subscription.unsubscribe();
-  }, []);
+    // Listen for Auth Changes (Sign In, Sign Out, Auto-Refresh)
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, sess) => {
+      console.log(`Auth Event: ${event}`);
+      setSession(sess);
+
+      if (event === 'SIGNED_IN' && sess) {
+        // Fetch profile immediately upon login
+        await fetchUserProfile(sess);
+      } else if (event === 'SIGNED_OUT') {
+        // Clear profile immediately upon logout
+        setProfile(null);
+        setSession(null); // Ensure session is cleared
+      }
+    });
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [fetchUserProfile]);
 
   const phoneSignIn = async (phone: string) => {
     const { error } = await supabase.auth.signInWithOtp({ phone });
@@ -98,51 +115,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       type: "sms",
     });
     if (error) throw error;
-    setSession(data.session);
+    // No need to setSession here manually, onAuthStateChange will catch it
   };
 
   const signInWithGoogle = async () => {
     try {
-      // if (Platform.OS === "web") {
-      // const { error } = await supabase.auth.signInWithOAuth({
-      //   provider: "google",
-      //   options: {
-      //     redirectTo: "http://localhost:8081",
-      //   },
-      // });
-      // if (error) {
-      //   console.log(error.message);
-      // }
-      // // 1. Check for Play Services
-      console.log("Before hasPlayServices");
       await GoogleSignin.hasPlayServices();
-      // // 2. Get user info and ID token
       const userInfo = await GoogleSignin.signIn();
-      console.log("UserInfo" + userInfo);
       const idToken = userInfo?.data?.idToken;
-      console.log("idToken" + idToken);
+      
       if (idToken) {
-        console.log("In the if thing...");
-        //   // 3. Sign in with Supabase
-        const { data, error } = await supabase.auth.signInWithIdToken({
+        const { error } = await supabase.auth.signInWithIdToken({
           provider: "google",
           token: idToken,
         });
-
-        if (error) {
-          console.log("IN THE CATCH");
-          console.log(error);
-          console.log(error.message);
-          throw error;
-        }
-        //   // SecureStore.setItem("userId", data.user.id);
-        console.log("Google sign-in successful!", data.user);
+        if (error) throw error;
+        // No need to setSession/fetchProfile here manually, onAuthStateChange will catch it
       }
     } catch (error) {
       console.error("Google sign-in error:", error);
-      throw new Error(
-        error instanceof Error ? error.message : "Couldn't authenticate you"
-      );
+      throw error;
     }
   };
 
@@ -150,7 +142,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signOut();
     SecureSession.deleteItemAsync("businessId");
     if (error) throw error;
-    setSession(null);
+  };
+
+  const refetchProfile = async () => {
+    setIsLoading(true); 
+    await fetchUserProfile(session);
+    setIsLoading(false);
   };
 
   const value = useMemo(
@@ -162,8 +159,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut,
       isLoading,
       profile,
+      refetchProfile,
     }),
-    [isLoading, profile, session]
+    [isLoading, profile, session, fetchUserProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

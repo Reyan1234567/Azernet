@@ -271,7 +271,7 @@ const Index = () => {
                 </Text>
               </View>
             </Card>
-            {data.inv.value.length > 0 && (
+            {data?.inv?.value?.length > 0 && (
               <>
                 <Text
                   style={{ color: textColor, textAlign: "center" }}
@@ -279,7 +279,7 @@ const Index = () => {
                 >
                   Inventory
                 </Text>
-                {data.inv.value.map((i, index) => {
+                {data?.inv?.value.map((i, index) => {
                   return (
                     <InventoryCard
                       itemName={i.item_name}

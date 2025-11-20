@@ -16,7 +16,7 @@ export const getProfile = async (user_id: string) => {
   return data;
 };
 
-export const uploadProfile = async (file: string, user_id: string) => {
+export const uploadProfile = async (file: any, user_id: string) => {
   const now = new Date();
   const bucketName = "Profile Pictures";
   const filePath = `${user_id}/${now
@@ -47,8 +47,8 @@ type profile = {
 
 export const updateProfile = async (profile: profile, user_id: string) => {
   const { data, error } = await supabase
-    .from("profile")
-    .update({
+    .from("profiles")
+    .upsert({
       first_name: profile.firstName,
       last_name: profile.lastName,
       profile_picture: profile.profilePicture,
