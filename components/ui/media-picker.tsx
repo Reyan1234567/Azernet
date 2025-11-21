@@ -1,13 +1,13 @@
-import { Button, ButtonSize, ButtonVariant } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
-import { View } from '@/components/ui/view';
-import { useColor } from '@/hooks/useColor';
-import { CORNERS, FONT_SIZE } from '@/theme/globals';
-import { Image as ExpoImage } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
-import * as MediaLibrary from 'expo-media-library';
-import { LucideProps, Video, X } from 'lucide-react-native';
-import React, { forwardRef, useEffect, useRef, useState } from 'react';
+import { Button, ButtonSize, ButtonVariant } from "@/components/ui/button";
+import { Text } from "@/components/ui/text";
+import { View } from "@/components/ui/view";
+import { useColor } from "@/hooks/useColor";
+import { CORNERS, FONT_SIZE } from "@/theme/globals";
+import { Image as ExpoImage } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import * as MediaLibrary from "expo-media-library";
+import { LucideProps, Video, X } from "lucide-react-native";
+import React, { forwardRef, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -17,15 +17,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   ViewStyle,
-} from 'react-native';
+} from "react-native";
 
-export type MediaType = 'image' | 'video' | 'all';
-export type MediaQuality = 'low' | 'medium' | 'high';
+export type MediaType = "image" | "video" | "all";
+export type MediaQuality = "low" | "medium" | "high";
 
 export interface MediaAsset {
   id: string;
   uri: string;
-  type: 'image' | 'video';
+  type: "image" | "video";
   width?: number;
   height?: number;
   duration?: number;
@@ -54,7 +54,7 @@ export interface MediaPickerProps {
   onError?: (error: string) => void;
 }
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 // Helper function to compare arrays of MediaAssets
 const arraysEqual = (a: MediaAsset[], b: MediaAsset[]): boolean => {
@@ -71,11 +71,11 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
   (
     {
       children,
-      mediaType = 'all',
+      mediaType = "all",
       multiple = false,
       gallery = false,
       maxSelection = 10,
-      quality = 'high',
+      quality = "high",
       onSelectionChange,
       onError,
       buttonText,
@@ -101,12 +101,12 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
     const prevSelectedAssetsRef = useRef<MediaAsset[]>(selectedAssets);
 
     // Theme colors
-    const cardColor = useColor('card');
-    const borderColor = useColor('border');
-    const textColor = useColor('text');
-    const mutedColor = useColor('mutedForeground');
-    const primaryColor = useColor('primary');
-    const secondary = useColor('secondary');
+    const cardColor = useColor("card");
+    const borderColor = useColor("border");
+    const textColor = useColor("text");
+    const mutedColor = useColor("mutedForeground");
+    const primaryColor = useColor("primary");
+    const secondary = useColor("secondary");
 
     // Request permissions on mount
     useEffect(() => {
@@ -125,15 +125,15 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
     const requestPermissions = async () => {
       try {
         const { status } = await MediaLibrary.requestPermissionsAsync();
-        setHasPermission(status === 'granted');
+        setHasPermission(status === "granted");
 
-        if (status !== 'granted') {
+        if (status !== "granted") {
           onError?.(
-            'Media library permission is required to access photos and videos'
+            "Media library permission is required to access photos and videos"
           );
         }
       } catch (error) {
-        onError?.('Failed to request permissions');
+        onError?.("Failed to request permissions");
         setHasPermission(false);
       }
     };
@@ -143,9 +143,9 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
 
       try {
         const mediaTypeFilter =
-          mediaType === 'image'
+          mediaType === "image"
             ? [MediaLibrary.MediaType.photo]
-            : mediaType === 'video'
+            : mediaType === "video"
             ? [MediaLibrary.MediaType.video]
             : [MediaLibrary.MediaType.photo, MediaLibrary.MediaType.video];
 
@@ -157,7 +157,7 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
 
         setGalleryAssets(galleryAssets);
       } catch (error) {
-        onError?.('Failed to load gallery assets');
+        onError?.("Failed to load gallery assets");
       }
     };
 
@@ -176,13 +176,13 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
       try {
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes:
-            mediaType === 'image'
-              ? ImagePicker.MediaTypeOptions.Images
-              : mediaType === 'video'
-              ? ImagePicker.MediaTypeOptions.Videos
-              : ImagePicker.MediaTypeOptions.All,
+            mediaType === "image"
+              ? ["images"]
+              : mediaType === "video"
+              ? ["videos"]
+              : ["images", "videos"],
           allowsMultipleSelection: multiple,
-          quality: quality === 'high' ? 1 : quality === 'medium' ? 0.7 : 0.3,
+          quality: quality === "high" ? 1 : quality === "medium" ? 0.7 : 0.3,
           selectionLimit: multiple ? maxSelection : 1,
         });
 
@@ -191,7 +191,7 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
             id: `gallery_${Date.now()}_${index}`,
             uri: asset.uri,
             type:
-              asset.type === 'video' ? ('video' as const) : ('image' as const),
+              asset.type === "video" ? ("video" as const) : ("image" as const),
             width: asset.width,
             height: asset.height,
             duration: asset.duration || undefined,
@@ -202,7 +202,7 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
           handleAssetSelection(newAssets);
         }
       } catch (error) {
-        onError?.('Failed to pick media from gallery');
+        onError?.("Failed to pick media from gallery");
       }
     };
 
@@ -231,8 +231,8 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
           uri: assetInfo.localUri || galleryAsset.uri,
           type:
             galleryAsset.mediaType === MediaLibrary.MediaType.video
-              ? 'video'
-              : 'image',
+              ? "video"
+              : "image",
           width: galleryAsset.width,
           height: galleryAsset.height,
           duration: galleryAsset.duration || undefined,
@@ -264,7 +264,7 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
           setIsGalleryVisible(false);
         }
       } catch (error) {
-        onError?.('Failed to select asset');
+        onError?.("Failed to select asset");
       }
     };
 
@@ -283,11 +283,11 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
             styles.previewImage,
             { width: previewSize, height: previewSize },
           ]}
-          contentFit='cover'
+          contentFit="cover"
         />
-        {item.type === 'video' && (
+        {item.type === "video" && (
           <View style={styles.videoIndicator}>
-            <Video size={16} color='white' />
+            <Video size={16} color="white" />
           </View>
         )}
         <TouchableOpacity
@@ -315,11 +315,11 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
           <ExpoImage
             source={{ uri: item.uri }}
             style={styles.galleryImage}
-            contentFit='cover'
+            contentFit="cover"
           />
           {item.mediaType === MediaLibrary.MediaType.video && (
             <View style={styles.videoIndicator}>
-              <Video size={20} color='white' />
+              <Video size={20} color="white" />
             </View>
           )}
           {multiple && isSelected && (
@@ -333,7 +333,7 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
                 style={{
                   color: secondary,
                   fontSize: 12,
-                  fontWeight: 'bold',
+                  fontWeight: "bold",
                 }}
               >
                 {assets.findIndex((asset) => asset.id === item.id) + 1}
@@ -358,11 +358,11 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
           >
             {buttonText ||
               `Select ${
-                mediaType === 'all'
-                  ? 'Media'
-                  : mediaType === 'image'
-                  ? 'Images'
-                  : 'Videos'
+                mediaType === "all"
+                  ? "Media"
+                  : mediaType === "image"
+                  ? "Images"
+                  : "Videos"
               }`}
           </Button>
         )}
@@ -382,8 +382,8 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
         {gallery && (
           <Modal
             visible={isGalleryVisible}
-            animationType='slide'
-            presentationStyle='pageSheet'
+            animationType="slide"
+            presentationStyle="pageSheet"
           >
             <View
               style={[styles.modalContainer, { backgroundColor: cardColor }]}
@@ -391,14 +391,14 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
               <View
                 style={[styles.modalHeader, { borderBottomColor: borderColor }]}
               >
-                <Text variant='title'>
+                <Text variant="title">
                   {buttonText ||
                     `Select ${
-                      mediaType === 'all'
-                        ? 'Media'
-                        : mediaType === 'image'
-                        ? 'Images'
-                        : 'Videos'
+                      mediaType === "all"
+                        ? "Media"
+                        : mediaType === "image"
+                        ? "Images"
+                        : "Videos"
                     }`}
                 </Text>
                 <View style={styles.modalActions}>
@@ -411,8 +411,8 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
                   )}
 
                   <Button
-                    size='sm'
-                    variant='success'
+                    size="sm"
+                    variant="success"
                     onPress={() => setIsGalleryVisible(false)}
                   >
                     Done
@@ -441,9 +441,9 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: CORNERS,
     borderWidth: 1,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   disabled: {
@@ -462,8 +462,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     borderRadius: 8,
     borderWidth: 1,
-    overflow: 'hidden',
-    position: 'relative',
+    overflow: "hidden",
+    position: "relative",
   },
 
   previewImage: {
@@ -471,23 +471,23 @@ const styles = StyleSheet.create({
   },
 
   videoIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     left: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     borderRadius: 12,
     padding: 4,
   },
 
   removeButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 6,
     right: 6,
     width: 20,
     height: 20,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   modalContainer: {
@@ -495,22 +495,22 @@ const styles = StyleSheet.create({
   },
 
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
 
   modalActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 16,
   },
 
   selectionCount: {
     fontSize: FONT_SIZE,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 
   closeButton: {
@@ -524,25 +524,25 @@ const styles = StyleSheet.create({
   galleryItem: {
     margin: 1,
     borderRadius: 4,
-    overflow: 'hidden',
-    position: 'relative',
+    overflow: "hidden",
+    position: "relative",
   },
 
   galleryImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 
   selectedIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 8,
     width: 24,
     height: 24,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 
-MediaPicker.displayName = 'MediaPicker';
+MediaPicker.displayName = "MediaPicker";

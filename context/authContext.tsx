@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const verifyOtp = async (phone: string, token: string) => {
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { error } = await supabase.auth.verifyOtp({
       phone,
       token,
       type: "sms",
@@ -144,11 +144,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
-  const refetchProfile = async () => {
+  const refetchProfile = useCallback(async () => {
     setIsLoading(true); 
     await fetchUserProfile(session);
     setIsLoading(false);
-  };
+  },[fetchUserProfile, session]);
 
   const value = useMemo(
     () => ({
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       refetchProfile,
     }),
-    [isLoading, profile, session, fetchUserProfile]
+    [session, isLoading, profile, refetchProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

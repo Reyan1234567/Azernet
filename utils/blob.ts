@@ -1,9 +1,10 @@
 export const uriToBlob = async (uri: string) => {
   try {
-    // Use the polyfilled fetch to read the local file
+    console.log(uri);
     const response = await fetch(uri);
-    // Convert the response to a Blob
+    console.log("BLOB: ", response);
     const blob = await response.blob();
+    console.log("THE ACTUAL BLOB", blob);
     return blob;
   } catch (error) {
     console.log(error);

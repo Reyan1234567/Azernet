@@ -1,118 +1,182 @@
-import { KeyboardAvoidingView, View } from "react-native";
-import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
+import React, { useState, useEffect } from "react";
+import { KeyboardAvoidingView, View, Platform } from "react-native";
 import { Image } from "@/components/ui/image";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useColor } from "@/hooks/useColor";
-import { useAuth } from "@/context/authContext";
-import * as z from "zod";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { MediaPicker } from "@/components/ui/media-picker";
-import { ImageIcon } from "lucide-react-native";
-import { uriToBlob } from "@/utils/blob";
-import { updateProfile, uploadProfile } from "@/service/profile";
 import SnackBarToast from "@/components/SnackBarToast";
+import { ImageIcon } from "lucide-react-native";
+
+// Form & Validation
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+// Logic & Context
+import { useAuth } from "@/context/authContext";
+import { updateProfile, uploadProfile } from "@/service/profile";
+import { uriToBlob } from "@/utils/blob";
+
+// 1. Define Schema outside component to prevent re-creation on render
+const profileSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  // We store the actual BLOB file here, optional because user might not change it
+  newImageFile: z.any().optional(), 
+});
+
+type ProfileFormData = z.infer<typeof profileSchema>;
 
 const Profile = () => {
-  const formData = z.object({
-    firstName: z.string().min(1, "this field can't be empty"),
-    lastName: z.string().min(1, "this field can't be empty"),
-    profilePic: z.string(),
-  });
+  const { profile, session, refetchProfile } = useAuth();
 
-  type profileData = z.infer<typeof formData>;
-  const AUTH = useAuth();
-  console.log("THE AUTH PROFILE", AUTH.profile.firstName);
+  // 2. Local state ONLY for displaying the image preview (URI string)
+  // The actual file data (Blob) lives inside React Hook Form
+  const [previewImage, setPreviewImage] = useState<string | undefined>(
+    profile?.profilePic
+  );
+
   const {
     control,
     handleSubmit,
     setValue,
-    getValues,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<profileData>({
-    resolver: zodResolver(formData),
+    reset,
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
     defaultValues: {
-      firstName: AUTH.profile.firstName,
-      lastName: AUTH.profile.lastName,
-      profilePic: AUTH.profile.profilePic,
+      firstName: profile?.firstName || "",
+      lastName: profile?.lastName || "",
     },
   });
-  const [image, setImage] = useState(AUTH.profile.profilePic);
-  const onSubmit = async (data: profileData) => {
-    console.log("DATA",data);
+
+  // Update form/preview if the Auth Context loads data late
+  useEffect(() => {
+    if (profile) {
+      reset({
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+      });
+      setPreviewImage(profile.profilePic);
+    }
+  }, [profile, reset]);
+
+  const handleImageSelection = async (assets: any[]) => {
+    if (!assets || assets.length === 0) return;
+
+    const selectedUri = assets[0].uri;
+
     try {
-      if (data.profilePic) {
-        const res = await uploadProfile(
-          data.profilePic,
-          AUTH?.session?.user?.id ?? ""
+      // Update UI immediately
+      setPreviewImage(selectedUri);
+
+      // Convert to Blob for the form
+      const blob = await uriToBlob(selectedUri);
+      
+      // Register with form so 'isDirty' becomes true
+      setValue("newImageFile", blob, { shouldDirty: true, shouldValidate: true });
+    } catch (error) {
+      console.error("Error processing image:", error);
+      SnackBarToast({ message: "Could not process image", isSuccess: false });
+    }
+  };
+
+  const onSubmit = async (data: ProfileFormData) => {
+    if (!session?.user?.id) return;
+
+    try {
+      let finalProfilePicPath = profile?.profilePic; // Default to existing
+
+      // 3. Step 1: Upload Image (Only if a new file exists in form data)
+      if (data.newImageFile) {
+        const uploadRes = await uploadProfile(
+          data.newImageFile,
+          session.user.id
         );
-        await updateProfile(
-          { ...data, profilePicture: res?.fullPath ?? "" },
-          AUTH.session?.user.id ?? ""
-        );
-      } else {
-        await updateProfile(
-          { ...data, profilePicture: AUTH.profile.profilePic },
-          AUTH.session?.user.id ?? ""
-        );
+        
+        if (!uploadRes?.fullPath) {
+          throw new Error("Image upload failed");
+        }
+        finalProfilePicPath = uploadRes.fullPath;
       }
+
+      // 4. Step 2: Update Database Profile
+      // Only send fields that actually changed; the service layer will mark
+      // the corresponding "is_*_overridden" flags as true.
+      const payload: {
+        firstName?: string;
+        lastName?: string;
+        profilePicture?: string;
+      } = {};
+
+      if (data.firstName !== profile?.firstName) {
+        payload.firstName = data.firstName;
+      }
+
+      if (data.lastName !== profile?.lastName) {
+        payload.lastName = data.lastName;
+      }
+
+      if (finalProfilePicPath !== profile?.profilePic) {
+        payload.profilePicture = finalProfilePicPath ?? "";
+      }
+
+      await updateProfile(payload, session.user.id);
+
+      // 5. Step 3: Refresh Global State
+      await refetchProfile();
+
+      // Reset form 'dirty' state with new values
+      reset(data); 
+
       SnackBarToast({
         message: "Profile updated successfully",
         isSuccess: true,
       });
     } catch (error) {
-      console.log(error);
+      console.error("Update error:", error);
       SnackBarToast({
         message: "Failed to update profile",
         isSuccess: false,
       });
     }
   };
+
   return (
     <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{
-        flexDirection: "column",
-        gap: 10,
-        alignItems: "stretch",
+        flex: 1,
         padding: 16,
-        width: "100%",
+        gap: 16,
+        width: "100%"
       }}
     >
-      <View style={{ alignItems: "center", marginBottom: 8 }}>
+      <View style={{ alignItems: "center", gap: 12, marginBottom: 10 }}>
         <Image
-          source={{
-            uri: image,
-          }}
+          source={{ uri: previewImage }}
           variant="circle"
           width={150}
           aspectRatio={1}
+          alt="Profile Picture"
+        />
+        <MediaPicker
+          mediaType="image"
+          buttonText="Change Photo"
+          icon={ImageIcon}
+          variant="outline"
+          onSelectionChange={handleImageSelection}
         />
       </View>
-      <MediaPicker
-        mediaType="image"
-        buttonText="Change Profile"
-        icon={ImageIcon}
-        variant="outline"
-        onSelectionChange={(assets) => {
-          const setValues = async () => {
-            const picFile = await uriToBlob(assets[0].uri);
-            console.log(picFile)
-            setValue("profilePic", picFile);
-            setImage(assets[0].uri);
-            console.log("Selected images:", assets);
-          };
-          setValues();
-        }}
-      />
+
       <Controller
         control={control}
         name="firstName"
-        render={({ field }) => (
+        render={({ field: { onChange, value } }) => (
           <Input
             label="First Name"
-            onChangeText={field.onChange}
-            value={field.value}
+            onChangeText={onChange}
+            value={value}
             error={errors.firstName?.message}
           />
         )}
@@ -121,24 +185,24 @@ const Profile = () => {
       <Controller
         control={control}
         name="lastName"
-        render={({ field }) => (
+        render={({ field: { onChange, value } }) => (
           <Input
             label="Last Name"
-            onChangeText={field.onChange}
-            value={field.value}
+            onChangeText={onChange}
+            value={value}
             error={errors.lastName?.message}
           />
         )}
       />
 
-      <View style={{ marginTop: 30 }}>
+      <View style={{marginTop:"auto", marginBottom:50}}>
         <Button
-          disabled={!isDirty && getValues("profilePic")===AUTH.profile.profilePic}
+          disabled={!isDirty || isSubmitting}
           loading={isSubmitting}
           onPress={handleSubmit(onSubmit)}
-          style={{ width: "100%", paddingVertical: 12 }}
+          style={{ width: "100%", paddingVertical: 12}}
         >
-          Save
+          Save Changes
         </Button>
       </View>
     </KeyboardAvoidingView>
