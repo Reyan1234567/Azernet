@@ -184,6 +184,7 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
           allowsMultipleSelection: multiple,
           quality: quality === "high" ? 1 : quality === "medium" ? 0.7 : 0.3,
           selectionLimit: multiple ? maxSelection : 1,
+          base64:true
         });
 
         if (!result.canceled && result.assets) {
@@ -201,6 +202,7 @@ export const MediaPicker = forwardRef<RNView, MediaPickerProps>(
 
           handleAssetSelection(newAssets);
         }
+        // console.log(result)
       } catch (error) {
         onError?.("Failed to pick media from gallery");
       }

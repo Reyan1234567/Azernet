@@ -25,7 +25,13 @@ const BusinessView = ({ name, onClick, icon, selected }: busV) => {
           alignItems: "center",
         }}
       >
-        <View style={[styles.iconContainer]}>
+        <View
+          style={{
+            ...styles.iconContainer,
+            backgroundColor: cardColor,
+            borderRadius: 50,
+          }}
+        >
           {icon ? (
             <Building color={textColor} />
           ) : (

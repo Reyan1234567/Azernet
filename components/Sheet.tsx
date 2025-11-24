@@ -1,21 +1,13 @@
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import { Button } from "@/components/ui/button";
 
 import { useColor } from "@/hooks/useColor";
 import { Image } from "@/components/ui/image";
 
 import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
-import {
-  ArrowRightFromLine,
-  PersonStanding,
-  Plus,
-  User,
-  UserPlus,
-  Zap,
-} from "lucide-react-native";
+import { Plus, User } from "lucide-react-native";
 import { Separator } from "./ui/separator";
 import {
   Accordion,
@@ -38,10 +30,6 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
   const mutedColor = useColor("textMuted");
   const cardColor = useColor("card");
   const foreground = useColor("foreground");
-  const footerItems = [
-    { icon: UserPlus, label: "Invite Friends" },
-    { icon: Zap, label: "Telegram Features" },
-  ];
   const BUSINESS = useBusiness();
   const AUTH = useAuth();
   return (
@@ -90,7 +78,9 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
           <ScrollView style={styles.menuSection}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => console.log(`Pressed:`)}
+              onPress={() => {
+                router.push("/(app)/(root)/profile");
+              }}
             >
               <View
                 style={[styles.iconContainer, { backgroundColor: cardColor }]}
@@ -153,18 +143,29 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+            <BusinessView
+              name={"My Items"}
+              onClick={() => {
+                router.navigate("/(app)/(root)/items");
+              }}
+              icon={false}
+              selected={false}
+              key={999999}
+            />
+            <BusinessView
+              name={"My Partners"}
+              onClick={() => {
+                router.navigate("/(app)/(root)/partners");
+              }}
+              icon={false}
+              selected={false}
+              key={999900}
+            />
           </ScrollView>
         </View>
         <View>
           <Separator />
           <View style={styles.footer}>
-            <Button
-              style={{ borderRadius: 5, marginBottom: 12 }}
-              onPress={() => router.navigate("/(app)/(root)/profile")}
-            >
-              <User size={18} style={{ marginRight: 8 }} />
-              <Text>My Profile</Text>
-            </Button>
             <View style={styles.contactInfo}>
               <Text style={[styles.contactText, { color: mutedColor }]}>
                 @reyanber

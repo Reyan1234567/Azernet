@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabase";
-
 export const getProfile = async (user_id: string) => {
   const { data, error } = await supabase
     .from("profiles")
@@ -16,27 +15,29 @@ export const getProfile = async (user_id: string) => {
   return data;
 };
 
-export const uploadProfile = async (uri: string, userId: string) => {
-  // 1. Convert URI to Blob directly here
-  const response = await fetch(uri);
-  const blob = await response.blob();
-
-  // 2. Upload (Overwrites previous file due to upsert: true)
+export const uploadProfile = async (
+  file: any,
+  userId: string,
+  fileName: string
+) => {
   const { data, error } = await supabase.storage
-    .from('profile-pictures') 
-    .upload(`${userId}/profile.jpg`, blob, { 
-      contentType: 'image/jpeg',
-      upsert: true 
+    .from("profile_pictures")
+    .upload(`${userId}/${fileName.replace(/^[^a-zA-z0-9]+$/, "_")}`, file, {
+      upsert: false,
+      contentType: "image/jpeg",
     });
 
-  if (error) throw error;
-
-  // 3. Return just the Public URL
-  const { data: urlData } = supabase.storage
-    .from('profile-pictures')
+  if (error) {
+    console.log(error);
+    throw error;
+  }
+  const { data: url} = supabase.storage
+    .from("profile_pictures")
     .getPublicUrl(data.path);
 
-  return urlData.publicUrl;
+  if (url) {
+    return url.publicUrl;
+  }
 };
 
 type ProfilePayload = {

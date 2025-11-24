@@ -1,37 +1,33 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { KeyboardAvoidingView, View, Platform } from "react-native";
 import { Image } from "@/components/ui/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MediaPicker } from "@/components/ui/media-picker";
+import { Text } from "@/components/ui/text";
+import * as ImagePicker from "expo-image-picker";
+import { decode } from 'base64-arraybuffer'; 
+
 import SnackBarToast from "@/components/SnackBarToast";
 import { ImageIcon } from "lucide-react-native";
-
-// Form & Validation
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
-// Logic & Context
 import { useAuth } from "@/context/authContext";
 import { updateProfile, uploadProfile } from "@/service/profile";
-import { uriToBlob } from "@/utils/blob";
+import { useColor } from "@/hooks/useColor";
 
-// 1. Define Schema outside component to prevent re-creation on render
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  // We store the actual BLOB file here, optional because user might not change it
-  newImageFile: z.any().optional(), 
+  newImageFile: z.any().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 const Profile = () => {
+  const textColor = useColor("text");
   const { profile, session, refetchProfile } = useAuth();
-
-  // 2. Local state ONLY for displaying the image preview (URI string)
-  // The actual file data (Blob) lives inside React Hook Form
   const [previewImage, setPreviewImage] = useState<string | undefined>(
     profile?.profilePic
   );
@@ -47,37 +43,40 @@ const Profile = () => {
     defaultValues: {
       firstName: profile?.firstName || "",
       lastName: profile?.lastName || "",
+      newImageFile: undefined,
     },
   });
 
-  // Update form/preview if the Auth Context loads data late
-  useEffect(() => {
-    if (profile) {
-      reset({
-        firstName: profile.firstName,
-        lastName: profile.lastName,
+  const pickImage = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      SnackBarToast({
+        message: "Permission to access the media library is required.",
+        isSuccess: false,
       });
-      setPreviewImage(profile.profilePic);
+      return;
     }
-  }, [profile, reset]);
 
-  const handleImageSelection = async (assets: any[]) => {
-    if (!assets || assets.length === 0) return;
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+      base64: true,
+    });
 
-    const selectedUri = assets[0].uri;
-
-    try {
-      // Update UI immediately
-      setPreviewImage(selectedUri);
-
-      // Convert to Blob for the form
-      const blob = await uriToBlob(selectedUri);
-      
-      // Register with form so 'isDirty' becomes true
-      setValue("newImageFile", blob, { shouldDirty: true, shouldValidate: true });
-    } catch (error) {
-      console.error("Error processing image:", error);
-      SnackBarToast({ message: "Could not process image", isSuccess: false });
+    if (!result.canceled) {
+      if (result.assets.length === 0 || !result.assets[0].base64) {
+        return;
+      }
+      setValue("newImageFile", result.assets[0], {
+        shouldDirty: true,
+        shouldValidate: true,
+        shouldTouch: true,
+      });
+      setPreviewImage(result.assets[0].uri);
     }
   };
 
@@ -85,30 +84,31 @@ const Profile = () => {
     if (!session?.user?.id) return;
 
     try {
-      let finalProfilePicPath = profile?.profilePic; // Default to existing
-
-      // 3. Step 1: Upload Image (Only if a new file exists in form data)
+      let finalProfilePicPath = profile?.profilePic;
       if (data.newImageFile) {
+        console.log("NEW IMAGE")
+        console.log(data.newImageFile.uri)
         const uploadRes = await uploadProfile(
-          data.newImageFile,
-          session.user.id
+          decode(data.newImageFile.base64),
+          session.user.id,
+          data.newImageFile.fileName
         );
-        
-        if (!uploadRes?.fullPath) {
+
+        if (!uploadRes) {
           throw new Error("Image upload failed");
         }
-        finalProfilePicPath = uploadRes.fullPath;
+        finalProfilePicPath = uploadRes;
       }
 
-      // 4. Step 2: Update Database Profile
-      // Only send fields that actually changed; the service layer will mark
-      // the corresponding "is_*_overridden" flags as true.
       const payload: {
         firstName?: string;
         lastName?: string;
         profilePicture?: string;
       } = {};
 
+      console.log(
+        "About to edit the profile, so the profile upload is either correct, or idk"
+      );
       if (data.firstName !== profile?.firstName) {
         payload.firstName = data.firstName;
       }
@@ -127,7 +127,7 @@ const Profile = () => {
       await refetchProfile();
 
       // Reset form 'dirty' state with new values
-      reset(data); 
+      reset(data);
 
       SnackBarToast({
         message: "Profile updated successfully",
@@ -149,7 +149,7 @@ const Profile = () => {
         flex: 1,
         padding: 16,
         gap: 16,
-        width: "100%"
+        width: "100%",
       }}
     >
       <View style={{ alignItems: "center", gap: 12, marginBottom: 10 }}>
@@ -160,13 +160,15 @@ const Profile = () => {
           aspectRatio={1}
           alt="Profile Picture"
         />
-        <MediaPicker
-          mediaType="image"
-          buttonText="Change Photo"
-          icon={ImageIcon}
+        <Button
           variant="outline"
-          onSelectionChange={handleImageSelection}
-        />
+          onPress={() => {
+            pickImage();
+          }}
+        >
+          <Text style={{ color: textColor }}>Change Profile</Text>
+          <ImageIcon color={textColor} />
+        </Button>{" "}
       </View>
 
       <Controller
@@ -195,12 +197,12 @@ const Profile = () => {
         )}
       />
 
-      <View style={{marginTop:"auto", marginBottom:50}}>
+      <View style={{ marginTop: "auto", marginBottom: 50 }}>
         <Button
           disabled={!isDirty || isSubmitting}
           loading={isSubmitting}
           onPress={handleSubmit(onSubmit)}
-          style={{ width: "100%", paddingVertical: 12}}
+          style={{ width: "100%", paddingVertical: 12 }}
         >
           Save Changes
         </Button>
