@@ -1,14 +1,14 @@
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Text } from "@/components/ui/text";
-import React from "react";
-import { Briefcase, Building, Check } from "lucide-react-native";
+import React, { ReactNode } from "react";
+import { Briefcase, Building, Check, LucideIcon } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 
 interface busV {
   name: string;
   key: number;
   onClick: () => void;
-  icon: boolean;
+  icon: ReactNode;
   selected: boolean;
 }
 const BusinessView = ({ name, onClick, icon, selected }: busV) => {
@@ -25,18 +25,8 @@ const BusinessView = ({ name, onClick, icon, selected }: busV) => {
           alignItems: "center",
         }}
       >
-        <View
-          style={{
-            ...styles.iconContainer,
-            backgroundColor: cardColor,
-            borderRadius: 50,
-          }}
-        >
-          {icon ? (
-            <Building color={textColor} />
-          ) : (
-            <Briefcase color={textColor} />
-          )}
+        <View style={{ ...styles.iconContainer, backgroundColor: cardColor, borderRadius:50}}>
+          {icon}
         </View>
         <Text variant="caption" style={{ color: textColor }}>
           {name}

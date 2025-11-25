@@ -76,9 +76,15 @@ const Business = () => {
         />
 
         <Button
-          onPress={async () =>
-            await handleCreateBusinesses(businessName, AUTH?.session?.user.id)
-          }
+          onPress={async () => {
+            if (!AUTH.session?.user.id) {
+              return;
+            }
+            await handleCreateBusinesses(
+              businessName,
+              Number(AUTH?.session?.user.id)
+            );
+          }}
           disabled={!businessName}
           loading={loading}
         >

@@ -7,7 +7,14 @@ import { Image } from "@/components/ui/image";
 
 import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
-import { Plus, User } from "lucide-react-native";
+import {
+  Briefcase,
+  Building,
+  LucidePersonStanding,
+  PackageOpen,
+  Plus,
+  User,
+} from "lucide-react-native";
 import { Separator } from "./ui/separator";
 import {
   Accordion,
@@ -20,6 +27,7 @@ import { useBusiness } from "@/context/businessContext";
 import { router } from "expo-router";
 import { useAuth } from "@/context/authContext";
 import { ScrollView } from "react-native-gesture-handler";
+import ItemCard from "./ItemCard";
 interface sheetInterface {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -45,11 +53,11 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
       >
         <View style={{ flex: 1 }}>
           <View style={styles.header}>
-            {AUTH.session?.user.user_metadata.picture ? (
+            {AUTH.profile?.profilePic ? (
               <View style={{ marginRight: 12 }}>
                 <Image
                   source={{
-                    uri: AUTH.session?.user.user_metadata.picture,
+                    uri: AUTH.profile?.profilePic,
                   }}
                   variant="circle"
                   width={50}
@@ -65,7 +73,7 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
             )}
             <View style={styles.userInfo}>
               <Text style={[styles.userName, { color: textColor }]}>
-                {AUTH.session?.user.user_metadata.name}
+                {AUTH.profile?.firstName + " " + AUTH.profile?.lastName}
               </Text>
               {AUTH.session?.user.phone && (
                 <Text style={[styles.userPhone, { color: mutedColor }]}>
@@ -76,28 +84,20 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
           </View>
           <Separator />
           <ScrollView style={styles.menuSection}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                router.push("/(app)/(root)/profile");
-              }}
-            >
-              <View
-                style={[styles.iconContainer, { backgroundColor: cardColor }]}
-              >
-                <User size={20} color={textColor} />
-              </View>
-              <Text style={[styles.menuLabel, { color: textColor }]}>
-                My account
-              </Text>
-            </TouchableOpacity>
+            <BusinessView
+              key={0}
+              name={"My account"}
+              onClick={()=>router.navigate("/(app)/(root)/profile")}
+              icon={<User color={textColor}/>}
+              selected={false}
+            />
             <Accordion type="single" collapsible>
               <AccordionItem value="item-1">
                 <AccordionTrigger>
                   <BusinessView
                     name={"My Businesses"}
                     onClick={() => {}}
-                    icon={true}
+                    icon={<Building color={textColor} />}
                     selected={false}
                     key={9999}
                   />
@@ -116,7 +116,7 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
                             setOpen(false);
                           }
                         }}
-                        icon={false}
+                        icon={<Briefcase color={textColor} />}
                         selected={BUSINESS.businessId === business.id}
                       />
                     ))}
@@ -148,7 +148,7 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
               onClick={() => {
                 router.navigate("/(app)/(root)/items");
               }}
-              icon={false}
+              icon={<PackageOpen color={textColor} />}
               selected={false}
               key={999999}
             />
@@ -157,7 +157,7 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
               onClick={() => {
                 router.navigate("/(app)/(root)/partners");
               }}
-              icon={false}
+              icon={<LucidePersonStanding color={textColor} />}
               selected={false}
               key={999900}
             />

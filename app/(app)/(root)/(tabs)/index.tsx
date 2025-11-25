@@ -60,8 +60,10 @@ const Index = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text variant="heading" style={{ color: textColor, fontSize: 28 }}>
-            Dashboard
+          <Text variant="heading" style={{ color: textColor, fontSize: 38 }}>
+            {BUSINESS?.businesses?.filter(
+              (b) => b.id === BUSINESS.businessId
+            )[0].business_name ?? "Dashboard"}
           </Text>
           <Text variant="body" style={{ color: mutedColor, marginTop: 4 }}>
             Welcome back! Here&apos;s your business overview

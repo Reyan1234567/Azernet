@@ -106,9 +106,6 @@ const Profile = () => {
         profilePicture?: string;
       } = {};
 
-      console.log(
-        "About to edit the profile, so the profile upload is either correct, or idk"
-      );
       if (data.firstName !== profile?.firstName) {
         payload.firstName = data.firstName;
       }
