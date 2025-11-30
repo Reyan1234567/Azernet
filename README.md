@@ -1,178 +1,173 @@
-# BNA UI 🚀
+# Zaha – Mobile ERP for Small Businesses
 
-![BNA UI Header](https://bna-ui.s3.eu-north-1.amazonaws.com/bna-ui-header.png)
+Zaha (internally "Azernet") is an Expo-powered React Native application that helps small businesses track inventory, partners, orders, sales, purchases, withdrawals, and cash movements from a single mobile dashboard. It ships with opinionated UI components, rich forms, Supabase-backed data, and Expo Router navigation tailored for production deployments.
 
-**B**uild **N**ative **A**pps - A powerful CLI for creating Expo React Native applications with a beautiful UI component library.
+![Zaha preview](https://github.com/user-attachments/assets/placeholder-zaha.png)
 
-## ✨ Features
+## Table of Contents
 
-- 🎨 **Beautiful UI Components** - Pre-built, customizable components with modern design
-- 🌙 **Theme Support** - Built-in light/dark mode with seamless transitions
-- 📱 **Expo Router Ready** - Complete navigation setup with tab and stack navigation
-- 🎯 **TypeScript First** - Full TypeScript support with excellent IntelliSense
-- 📦 **Flexible Package Manager** - Works with npm, yarn, or pnpm
-- 🚀 **Zero Configuration** - Get started in seconds with sensible defaults
-- 🔧 **Highly Customizable** - Easily customize colors, spacing, and components
-- 📲 **Cross-Platform** - Perfect compatibility across iOS and Android
-- ⚡ **Performance Optimized** - Lightweight and fast components
-- 🎭 **Animation Ready** - Smooth animations with React Native Reanimated
+1. [Key Features](#key-features)
+2. [Architecture & Tech Stack](#architecture--tech-stack)
+3. [Project Structure](#project-structure)
+4. [App Workflows](#app-workflows)
+5. [Supabase Requirements](#supabase-requirements)
+6. [Environment Variables](#environment-variables)
+7. [Getting Started](#getting-started)
+8. [Common Tasks](#common-tasks)
+9. [Troubleshooting](#troubleshooting)
+10. [Contributing](#contributing)
 
-## 📦 Installation
+## Key Features
+
+- **Multi-business management** – Switch between businesses via `BusinessProvider`, persist business IDs in secure storage, and scope all queries by the active business.
+- **Dashboard analytics** – Date-filtered revenue, orders, profitability, and inventory widgets rendered with custom cards and charts on the home tab.
+- **Inventory & catalog** – Full CRUD for items, including measurement filtering, soft deletes, and Supabase RPC-backed stock tracking (`get_invetory_info`).
+- **Partners & contacts** – Manage suppliers/customers, navigate to dedicated partner detail pages, and reuse partner data across orders and transactions.
+- **Sales, purchases, and orders** – Unified flow to create orders, mark them as purchased or delivered, reverse transactions, and track unpaid amounts with RPC helpers (`markaspurchased`, `reverseordertopending`, etc.).
+- **Cash management** – Fund/withdraw business cash, track ledger entries, and surface outstanding balances.
+- **Auth & profile** – Supabase Auth (OTP + Google OAuth) with Expo Secure Store persistence plus profile fetching/editing via `authContext`.
+- **Polished UI system** – Custom design system (buttons, cards, tabs, date pickers, pickers, toasts, overlays) with light/dark themes, haptics, and motion via Reanimated.
+- **Offline-friendly data layer** – TanStack Query cache wrapping Supabase RPC calls, optimistic UX, and invalidation helpers for orders, purchases, sales, and inventory.
+
+## Architecture & Tech Stack
+
+| Layer | Details |
+| --- | --- |
+| **Framework** | Expo SDK 54 with Expo Router v2 for nested layouts and typed routes (@`app/(app)/(root)/`). |
+| **UI / UX** | Custom UI kit under `components/` + `theme/`, Lucide icons, Expo Haptics, Expo Image, Blur, Symbols, and Reanimated animations. |
+| **State** | React Context for auth (`context/authContext.tsx`) and business selection (`context/businessContext.tsx`), React Hook Form + Zod for input validation. |
+| **Networking & Data** | Supabase JS client (secure store adapter) + RPC endpoints, TanStack Query for fetching/mutations, usehooks utilities. |
+| **Auth** | Supabase email/OTP + Google Sign-In (`@react-native-google-signin/google-signin`) configured in `AuthProvider`. |
+| **Tooling** | TypeScript, ESLint (Expo config), Reactotron for debugging, Expo Go/EAS for builds. |
+
+## Project Structure
+
+```
+.
+├── app/
+│   ├── login.tsx                # Google/Supabase auth entry
+│   └── (app)/(root)/
+│       ├── _layout.tsx          # Authenticated stack + QueryClient + providers
+│       ├── (tabs)/              # Bottom tabs: dashboard, business, orders, sales, purchases
+│       ├── create* screens      # Item, partner, order, transaction flows
+│       ├── purchaseOrder/, saleOrder/  # Detail views
+│       └── profile.tsx          # User profile & settings
+├── components/                  # UI system, dialogs, forms, cards, loaders
+├── context/                     # authContext + businessContext providers
+├── service/                     # Supabase data layer (items, partners, orders, sales, etc.)
+├── theme/                       # Colors, typography, theme provider
+├── hooks/                       # Color hooks, form utilities, custom logic
+├── lib/supabase.ts              # Supabase client configured with SecureStore
+├── utils/                       # Helpers (dates, currency formatters, etc.)
+├── app.json / expo-env.d.ts     # Expo app config
+├── package.json                 # Scripts & dependencies
+└── README.md                    # You are here
+```
+
+## App Workflows
+
+1. **Authentication** – `AuthProvider` initializes Supabase session, listens to auth state changes, fetches profile data, and exposes `signInWithGoogle`, `phoneSignIn`, OTP verification, and `signOut` hooks. Google Sign-In is configured with the Expo Public web client ID. (@`context/authContext.tsx`)
+2. **Business selection** – `BusinessProvider` loads available businesses via `getBusinessIds`, restores persisted ID from secure storage, and provides `setBusiness` to scope all downstream queries. (@`context/businessContext.tsx`)
+3. **Dashboard tab (`(tabs)/index.tsx`)** – Combines dashboard stats (`service/dashboard.ts`) and inventory snapshots (`service/item.ts#getInvetoryInfo`) with TanStack Query, date pickers, and custom cards.
+4. **Transactions (purchases/sales/orders)** – Screen components call into the corresponding `service/*.ts` modules which in turn wrap Supabase tables and RPC routines for state transitions, reversals, and validations.
+5. **Profile** – Fetches/updates Supabase profile data and allows sign-out with confirmation dialogs and a shared loading overlay pattern.
+
+## Supabase Requirements
+
+The API layer assumes the following:
+
+- Tables: `businesses`, `items`, `partners`, `orders`, `purchases`, `sales`, `business_cash`, `transactions`, and related lookup tables with `is_deleted` soft-delete flags.
+- RPC functions used by the app (must exist in your Supabase project):
+  - `get_invetory_info`
+  - `getallorders`
+  - `markaspurchased`
+  - `markasdelivered`
+  - `reverseordertopending`
+  - `reverseordertopurchased`
+- RLS policies should allow the authenticated Supabase user to access only their business data.
+- Storage buckets (optional) for profile pictures if you extend profile uploads.
+
+> ℹ️ Check the implementations under `service/` to ensure your Supabase schema and RPC payloads match expectations before running the app.
+
+## Environment Variables
+
+Create an `.env` file at the project root (Expo automatically exposes `EXPO_PUBLIC_*` vars):
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=your-supabase-url
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-anon-key
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-google-oauth-client-id
+```
+
+- **Supabase URL/key** – Found in Supabase project settings → API.
+- **Google client ID** – Use the web client ID configured for Expo (OAuth consent screen + Android/iOS credentials).
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js ≥ 18 and npm (or pnpm/yarn if you prefer).
+- Expo CLI (`npm install -g expo-cli`) or the new `npx expo` workflow.
+- Supabase project with the schema described above.
+
+### Installation
 
 ```bash
-# The fastest way to set up BNA UI in your Expo project:
-npx bna-ui init
-
-# Navigate to your Expo project
-cd bna-app
-
-# Start adding components
-npx bna-ui add button
-npx bna-ui add card
-npx bna-ui add input
-```
-
-## 🎨 Available Components
-
-| Component      | Description                       | Status         |
-| -------------- | --------------------------------- | -------------- |
-| `Button`       | Customizable button with variants | ✅ Available   |
-| `Card`         | Container component with shadow   | ✅ Available   |
-| `Input`        | Text input with validation        | ✅ Available   |
-| `Bottom Sheet` | Overlay modal component           | ✅ Available   |
-| `Spinner`      | Loading spinner and skeletons     | ✅ Available   |
-| `Avatar`       | User profile image component      | ✅ Available   |
-| `Badge`        | Small status indicator            | ✅ Available   |
-| `Date Picker`  | Date Picker component             | ✅ Available   |
-| `Switch`       | Toggle switch component           | ✅ Available   |
-| `Progress`     | Range progress component          | ✅ Available   |
-| `Charts`       | Charts components.                | 🔄 Coming Soon |
-
-## 🎯 Usage Example
-
-```tsx
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { View } from '@/components/ui/view';
-
-export default function HomeScreen() {
-  return (
-    <View style={{ flex: 1, padding: 20 }}>
-      <Card>
-        <Input placeholder='Enter your email' keyboardType='email-address' />
-        <Button
-          variant='success'
-          onPress={() => console.log('Button pressed!')}
-        >
-          Get Started
-        </Button>
-      </Card>
-    </View>
-  );
-}
-```
-
-## 🌙 Theme Configuration
-
-BNA UI comes with a flexible theming system:
-
-```tsx
-// theme/colors.ts
-export const lightTheme = {
-  colors: {
-    background: '#FFFFFF',
-    foreground: '#000000',
-    card: '#F2F2F7',
-    cardForeground: '#000000',
-    popover: '#F2F2F7',
-    popoverForeground: '#000000',
-    primary: '#18181b',
-    primaryForeground: '#FFFFFF',
-    secondary: '#F2F2F7',
-    secondaryForeground: '#18181b',
-    muted: '#78788033',
-    mutedForeground: '#71717a',
-    // ... more colors
-  },
-};
-
-export const darkTheme = {
-  colors: {
-    background: '#000000',
-    foreground: '#FFFFFF',
-    card: '#1C1C1E',
-    cardForeground: '#FFFFFF',
-    popover: '#18181b',
-    popoverForeground: '#FFFFFF',
-    primary: '#e4e4e7',
-    primaryForeground: '#18181b',
-    secondary: '#1C1C1E',
-    secondaryForeground: '#FFFFFF',
-    muted: '#78788033',
-    mutedForeground: '#a1a1aa',
-    // ... more colors
-  },
-};
-```
-
-## 📱 Platform Support
-
-- ✅ **iOS** - Full native iOS support
-- ✅ **Android** - Full native Android support
-- ✅ **Web** - Responsive web support
-- ✅ **Expo Go** - Development with Expo Go
-- ✅ **EAS Build** - Production builds with EAS
-
-## 🛠️ Development
-
-```bash
-# Clone the repository
-git clone https://github.com/ahmedbna/bna-ui.git
-cd bna-ui
-
-# Install dependencies
+git clone <repo-url>
+cd zaha
 npm install
 
-# Build for production
-npm run build
+# Set environment variables (.env) before running the app
 ```
 
-## 🤝 Contributing
+### Run the app
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+```bash
+# Start Metro + Expo devtools
+npm run start
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+# Platform-specific helpers
+npm run android   # Build & install on Android emulator/device
+npm run ios       # Build & install on iOS simulator (macOS only)
+npm run web       # Run Expo Router in the browser
+```
 
-## 📄 License
+### Linting & cleanup
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```bash
+npm run lint
+```
 
-## 🔗 Links
+## Common Tasks
 
-- 📚 **Documentation**: [https://ui.ahmedbna.com](https://ui.ahmedbna.com)
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/ahmedbna/ui/issues)
-- 💬 **Linkedin**: [@ahmedbna](https://www.linkedin.com/in/ahmedbna/)
-- 𝕏 **X**: [@ahmedbnaa](https://x.com/ahmedbnaa)
+| Task | How |
+| --- | --- |
+| **Select another business** | Use UI controls backed by `BusinessProvider.setBusiness` (persists via Expo Secure Store). |
+| **Create an order** | Navigate to “Create Order”, fill partner/item/quantity, submit → `service/orders.ts#createOrder`. |
+| **Mark order as purchased/delivered** | Actions trigger RPC calls (`markaspurchased`, `markasdelivered`) and invalidate `orders`, `purchases`, `sales` queries. |
+| **Reverse a sale/purchase** | AlertDialog + LoadingOverlay confirms reversal, hitting `reverseordertopending`/`reverseordertopurchased`. |
+| **Fund/withdraw cash** | `FundBusiness` and withdraw screens call `service/business_cash.ts` helpers to record ledger entries. |
+| **Update profile** | Use profile screen; data flows through `AuthProvider.refetchProfile`. |
 
-## ⭐ Support
+## Troubleshooting
 
-If you find BNA UI helpful, please consider giving it a star on GitHub! It helps us a lot.
+1. **Google sign-in stuck at "In progress"** – Ensure you called `GoogleSignin.configure` with the correct `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (already wired inside `AuthProvider`). Clear Expo Go cache if switching accounts.
+2. **Supabase errors about missing RPC** – Confirm the stored procedures listed above exist and accept the same arguments defined in `service/*.ts` files. Names are case-sensitive.
+3. **Business data not loading** – Check that `business_id` is persisted in Secure Store and that the active user owns at least one business (see `getBusinessIds`). Delete the `businessId` key from Secure Store to reset selection.
+4. **Metro bundler issues** – Run `npx expo start -c` to clear caches, or use `npm run reset-project` (see `scripts/reset-project.js`).
+5. **React Query cache not updating** – Make sure query keys include `businessId` and `selectedDate`. Invalidate affected keys after mutations (`orders`, `purchases`, `sales`, `dashboard`).
 
-[![GitHub stars](https://img.shields.io/github/stars/ahmedbna/ui?style=social)](https://github.com/ahmedbna/ui)
+## Contributing
 
-## 📈 Stats
+1. Fork the repository and create a feature branch: `git checkout -b feature/<name>`
+2. Follow the established UI patterns (LoadingOverlay + AlertDialog for destructive actions, TanStack Query for data fetching).
+3. Run `npm run lint` before opening a PR.
+4. Submit a pull request describing the change, screenshots for UI updates, and Supabase migration notes if applicable.
 
-![GitHub package.json version](https://img.shields.io/github/package-json/v/ahmedbna/ui)
-![npm](https://img.shields.io/npm/v/bna-ui)
-![npm](https://img.shields.io/npm/dm/bna-ui)
-![GitHub](https://img.shields.io/github/license/ahmedbna/ui)
+## License
+
+Specify your license of choice (MIT, Apache-2.0, etc.) or keep the repository private until you are ready to publish.
 
 ---
 
-Made with ❤️ by [Ahmed BNA](https://github.com/ahmedbna)
+Built with ❤️ using Expo, React Native, and Supabase.
