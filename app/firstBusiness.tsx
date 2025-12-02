@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Store } from "lucide-react-native";
 import { createBusinesses } from "@/service/business";
 import { useAuth } from "@/context/authContext";
-import { useToast } from "@/components/ui/toast";
 import { BusinessContext } from "@/context/businessContext";
 import { useColor } from "@/hooks/useColor";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,7 +15,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 const Business = () => {
   const [businessName, setBusinesName] = useState("");
   const [loading, setLoading] = useState(false);
-  const length=useBottomTabBarHeight()
+  const length=10
   const textColor = useColor("text");
   const AUTH = useAuth();
   const BUSINESS = useContext(BusinessContext);
@@ -83,7 +82,7 @@ const Business = () => {
         >
           Submit
         </Button>
-        <Button onPress={() => AUTH?.signOut()}>Signout</Button>
+        {/* <Button onPress={() => AUTH?.signOut()}>Signout</Button> */}
       </View>
     </SafeAreaView>
   );

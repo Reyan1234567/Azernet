@@ -4,6 +4,7 @@ import { Bell, Menu } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 import { View } from "@/components/ui/view";
 import { SheetLeft } from "./Sheet";
+import { router } from "expo-router";
 
 const TopBar = () => {
   const [open, setOpen] = useState(false);
@@ -18,11 +19,21 @@ const TopBar = () => {
           flexDirection: "row",
           justifyContent: "space-between",
           padding: 15,
-          paddingTop:30
+          paddingTop: 30,
         }}
       >
-        <TouchableOpacity style={{padding:10}} onPress={() => setOpen((now) => !now)}><Menu  color={primaryColor} /></TouchableOpacity>
-        <TouchableOpacity style={{padding:10}} onPress={()=>console.log("Bell pressed")}><Bell  color={primaryColor} /></TouchableOpacity>
+        <TouchableOpacity
+          style={{ padding: 10 }}
+          onPress={() => setOpen((now) => !now)}
+        >
+          <Menu color={primaryColor} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ padding: 10 }}
+          onPress={() => router.navigate("/(app)/(root)/calculator")}
+        >
+          <Bell color={primaryColor} />
+        </TouchableOpacity>
       </View>
       <SheetLeft open={open} setOpen={setOpen} />
     </>
