@@ -50,7 +50,13 @@ export default function FeatureLayout() {
           <Stack.Screen name="saleOrder/[id]" options={{ headerTitle: "" }} />
           <Stack.Screen name="amountUnpaid" options={{ headerTitle: "" }} />
           <Stack.Screen name="createBusiness" options={{ headerTitle: "" }} />
-          <Stack.Screen name="calculator" options={{ headerTitle: "" }} />
+          <Stack.Screen
+            name="calculator"
+            options={{
+              headerTitle: "",
+              headerStyle: { backgroundColor: "transparent" },
+            }}
+          />
           <Stack.Screen
             name="profile"
             options={{

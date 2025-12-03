@@ -1,4 +1,4 @@
-import { KeyboardAvoidingView, ScrollView, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import React, { useContext, useState } from "react";
@@ -131,9 +131,13 @@ const CreatePurchaseOrSale = () => {
           pricePerItem: formData.price,
           unpaidAmount: formData.unpaidAmount,
         });
-        toast({
-          title: "Purchase record created successfully",
-          variant: "success",
+        // toast({
+        //   title: "Purchase record created successfully",
+        //   variant: "success",
+        // });
+        SnackBarToast({
+          message: "Purchase record created successfully",
+          isSuccess: true,
         });
         queryClient.invalidateQueries({ queryKey: ["purchaseTransactions"] });
       } else {
@@ -218,7 +222,11 @@ const CreatePurchaseOrSale = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
-      <View style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      >
         <View
           style={{
             flexDirection: "row",
@@ -240,8 +248,10 @@ const CreatePurchaseOrSale = () => {
         </View>
 
         <ScrollView
-          style={{ padding: 15 }}
+          style={{ paddingHorizontal: 15 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <Separator style={{ marginVertical: 15 }} />
           <View style={{ flexDirection: "column", gap: 15 }}>
@@ -464,7 +474,7 @@ const CreatePurchaseOrSale = () => {
             </Button>
           </View>
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

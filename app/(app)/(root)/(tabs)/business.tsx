@@ -1,21 +1,10 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Text } from "@/components/ui/text";
 import { View } from "@/components/ui/view";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { ScrollView, TouchableOpacity } from "react-native";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useColor } from "@/hooks/useColor";
-import {
-  Building2,
-  Users,
-  Package,
-  Phone,
-  Mail,
-  MapPin,
-  ChevronRight,
-} from "lucide-react-native";
+import { Users, Package, ChevronRight } from "lucide-react-native";
 import React from "react";
 import { useRouter } from "expo-router";
 import TopBar from "@/components/topBar";
@@ -24,21 +13,9 @@ import FundBusiness from "@/components/FundBusiness";
 const Business = () => {
   const router = useRouter();
   const bgColor = useColor("background");
-  const cardBg = useColor("card");
   const textColor = useColor("text");
   const mutedColor = useColor("textMuted");
   const primaryColor = useColor("primary");
-
-  // Sample business data
-  const businessInfo = {
-    name: "Zaha Trading Co.",
-    owner: "Ahmed Hassan",
-    phone: "+251 911 123 456",
-    email: "info@zahatrading.com",
-    address: "Bole, Addis Ababa, Ethiopia",
-    established: "2020",
-    type: "Import/Export",
-  };
 
   // Sample items data
   const items = [

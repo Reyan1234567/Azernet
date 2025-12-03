@@ -14,6 +14,7 @@ interface busV {
 const BusinessView = ({ name, onClick, icon, selected }: busV) => {
   const textColor = useColor("text");
   const cardColor = useColor("card");
+  const background=useColor("background")
   const borderColor = useColor("foreground");
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onClick}>
@@ -41,7 +42,7 @@ const BusinessView = ({ name, onClick, icon, selected }: busV) => {
             padding: 5,
           }}
         >
-          <Check size={15} />
+          <Check size={15} color={background}/>
         </View>
       )}
     </TouchableOpacity>

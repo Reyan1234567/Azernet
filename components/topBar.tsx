@@ -1,6 +1,6 @@
-import { StyleSheet, TouchableOpacity } from "react-native";
+import { TouchableOpacity, StatusBar, useColorScheme } from "react-native";
 import React, { useState } from "react";
-import { Bell, Menu } from "lucide-react-native";
+import { Calculator, Menu } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 import { View } from "@/components/ui/view";
 import { SheetLeft } from "./Sheet";
@@ -10,7 +10,7 @@ const TopBar = () => {
   const [open, setOpen] = useState(false);
   const secondary = useColor("secondary");
   const primaryColor = useColor("primary");
-
+  const theme = useColorScheme();
   return (
     <>
       <View
@@ -22,6 +22,9 @@ const TopBar = () => {
           paddingTop: 30,
         }}
       >
+        <StatusBar
+          barStyle={theme !== "dark" ? "dark-content" : "light-content"}
+        />
         <TouchableOpacity
           style={{ padding: 10 }}
           onPress={() => setOpen((now) => !now)}
@@ -32,7 +35,7 @@ const TopBar = () => {
           style={{ padding: 10 }}
           onPress={() => router.navigate("/(app)/(root)/calculator")}
         >
-          <Bell color={primaryColor} />
+          <Calculator color={primaryColor} />
         </TouchableOpacity>
       </View>
       <SheetLeft open={open} setOpen={setOpen} />

@@ -190,11 +190,20 @@ const PurchaseTransaction = () => {
             )}
           />
 
-          <AddButton
-            onPress={() => {
-              router.push("/createPurchaseOrSale?type=purchase");
+          <View
+            style={{
+              position: "absolute",
+              bottom: 15,
+              right: 15,
+              zIndex: 1000,
             }}
-          />
+          >
+            <AddButton
+              onPress={() => {
+                router.push("/createPurchaseOrSale?type=purchase");
+              }}
+            />
+          </View>
         </View>
       ) : null}
       <AlertDialog

@@ -27,7 +27,6 @@ import { useBusiness } from "@/context/businessContext";
 import { router } from "expo-router";
 import { useAuth } from "@/context/authContext";
 import { ScrollView } from "react-native-gesture-handler";
-import ItemCard from "./ItemCard";
 interface sheetInterface {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;

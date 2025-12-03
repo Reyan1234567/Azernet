@@ -80,6 +80,7 @@ const Business = () => {
             if (!AUTH.session?.user.id) {
               return;
             }
+            console.log("In the handler function: ", AUTH.session?.user.id);
             await handleCreateBusinesses(
               businessName,
               Number(AUTH?.session?.user.id)
