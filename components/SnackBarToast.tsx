@@ -22,8 +22,8 @@ const SnackBarToast = ({
       text: message,
       duration: Snackbar.LENGTH_LONG,
       backgroundColor: isSuccess
-        ? "rgba(105, 0, 0, 0.47)"
-        : "rgba(0, 105, 25, 0.6)",
+        ? "rgba(105, 0, 0, 1)"
+        : "rgba(0, 105, 25, 1)",
       marginBottom: marginBottom,
       action: {
         text: action?.text,
@@ -36,7 +36,7 @@ const SnackBarToast = ({
       text: message,
       duration: Snackbar.LENGTH_LONG,
       backgroundColor: !isSuccess
-        ? "rgba(105, 0, 0, 0.47)"
+        ? "rgba(105, 0, 0, 1)"
         : "rgba(0, 67, 16, 1)",
       marginBottom: marginBottom,
     });

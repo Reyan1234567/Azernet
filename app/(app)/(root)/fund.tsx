@@ -5,7 +5,7 @@ import React, { useContext } from "react";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { useColor } from "@/hooks/useColor";
-import { useToast } from "@/components/ui/toast";
+// import { useToast } from "@/components/ui/toast";
 import * as z from "zod";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,7 @@ import { createDeposit } from "@/service/business_cash";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { BusinessContext } from "@/context/businessContext";
+import SnackBarToast from "@/components/SnackBarToast";
 
 const formSchema = z.object({
   amount: z.number().min(1),
@@ -24,7 +25,6 @@ const formSchema = z.object({
 type formType = z.infer<typeof formSchema>;
 const Fund = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   const {
     control,
     handleSubmit,
@@ -42,28 +42,25 @@ const Fund = () => {
   const onSubmit = async (data: formType) => {
     try {
       await createDeposit(BUSINESS?.businessId, data.amount, data.description);
-      toast({
-        title: "Deposit Successful",
-        description: "Your deposit has been added to your business funds.",
-        variant: "success",
-      });
+      SnackBarToast({
+        message:"Deposit Successful!",
+        isSuccess:true
+      })
       queryClient.invalidateQueries({
         queryKey: ["sumMoney"],
       });
       router.back();
     } catch (e) {
       if (e instanceof Error) {
-        toast({
-          title: "Deposit Failed",
-          description: e.message,
-          variant: "error",
-        });
+        SnackBarToast({
+          message:"Deposit Failed!",
+          isSuccess:false
+        })
       } else {
-        toast({
-          title: "Deposit Failed",
-          description: "Something went wrong while processing your deposit.",
-          variant: "error",
-        });
+        SnackBarToast({
+          message:"Deposit Failed!",
+          isSuccess:false
+        })
       }
       console.log(e);
     }

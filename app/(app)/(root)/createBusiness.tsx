@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Store } from "lucide-react-native";
 import { createBusinesses } from "@/service/business";
 import { useAuth } from "@/context/authContext";
-import { useToast } from "@/components/ui/toast";
 import { useBusiness } from "@/context/businessContext";
 import { useColor } from "@/hooks/useColor";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "../../../components/ui/text";
+import SnackBarToast from "@/components/SnackBarToast";
 
 const Business = () => {
   const [businessName, setBusinesName] = useState("");
@@ -17,35 +17,49 @@ const Business = () => {
   const textColor = useColor("text");
   const AUTH = useAuth();
   const BUSINESS = useBusiness();
-  const { toast } = useToast();
+  // const { toast } = useToast();
   const handleCreateBusinesses = async (name: string, id: number) => {
     try {
+      console.log("name: ", name);
+      console.log("id: ", id);
       setLoading(true);
       const newId = await createBusinesses(name, id);
-      toast({
-        title: "Business Created!",
-        description: "Your business has been successfully registered",
-        duration: 3000,
-        variant: "success",
+      // toast({
+      //   title: ,
+      //   description: "Your business has been successfully registered",
+      //   duration: 3000,
+      //   variant: "success",
+      // });
+      SnackBarToast({
+        message: "Business Created!",
+        isSuccess: true,
       });
       console.log("About to set context");
       BUSINESS?.setBusiness(newId.toString());
     } catch (e) {
       if (e instanceof Error) {
-        toast({
-          title: "Failed to Create Business",
-          description: e.message,
-          duration: 5000,
-          variant: "error",
+        // toast({
+        //   title: "Failed to Create Business",
+        //   description: e.message,
+        //   duration: 5000,
+        //   variant: "error",
+        // });
+        SnackBarToast({
+          message: "Failed to Create Business!",
+          isSuccess: false,
         });
         console.log(e.message);
         console.log(e.stack);
       } else {
-        toast({
-          title: "Failed to Create Business",
-          description: "Something went wrong when creating business",
-          duration: 5000,
-          variant: "error",
+        // toast({
+        //   title: "Failed to Create Business",
+        //   description: "Something went wrong when creating business",
+        //   duration: 5000,
+        //   variant: "error",
+        // });
+        SnackBarToast({
+          message: "Failed to Create Business!",
+          isSuccess: false,
         });
       }
     } finally {
@@ -83,7 +97,7 @@ const Business = () => {
             console.log("In the handler function: ", AUTH.session?.user.id);
             await handleCreateBusinesses(
               businessName,
-              Number(AUTH?.session?.user.id)
+              Number(AUTH.session?.user.id)
             );
           }}
           disabled={!businessName}

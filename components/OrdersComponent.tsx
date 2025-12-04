@@ -12,7 +12,6 @@ import SnackBarToast from "./SnackBarToast";
 import { router } from "expo-router";
 import { Spinner, LoadingOverlay } from "./ui/spinner";
 import { useDebounce } from "@uidotdev/usehooks";
-import { useToast } from "./ui/toast";
 import { changeStatus, deleteOrder, getAllOrders } from "@/service/orders";
 import OrderPendingCard from "./OrderPendingCard";
 import OrderPurchasedCard from "./OrderPurchasedCard";
@@ -52,7 +51,7 @@ const OrdersComponent = () => {
         marginBottom: length,
       });
       queryClient.invalidateQueries({
-        queryKey: ["orders", "purchases", "sales"],
+        queryKey: ["orders", "purchaseTransactions", "salesTransactions"],
       });
       reverseToPending.close();
     } catch (e) {
@@ -76,7 +75,7 @@ const OrdersComponent = () => {
         marginBottom: length,
       });
       queryClient.invalidateQueries({
-        queryKey: ["orders", "purchases", "sales"],
+        queryKey: ["orders", "purchaseTransactions", "salesTransactions"],
       });
       reverseToPurchased.close();
     } catch (e) {
@@ -96,7 +95,7 @@ const OrdersComponent = () => {
       try {
         await deleteOrder(orderId);
         queryClient.invalidateQueries({
-          queryKey: ["orders", "purchases", "sales"],
+          queryKey: ["orders", "purchaseTransactions", "salesTransactions"],
         });
         SnackBarToast({
           message: "Order deleted successfully",

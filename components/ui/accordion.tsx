@@ -4,7 +4,7 @@ import { View } from "@/components/ui/view";
 import { useColor } from "@/hooks/useColor";
 import { ChevronRight } from "lucide-react-native";
 import React, { createContext, useContext, useState } from "react";
-import { TouchableOpacity, useColorScheme } from "react-native";
+import { TouchableOpacity } from "react-native";
 
 // Context for accordion state
 interface AccordionContextType {
@@ -119,7 +119,7 @@ export function AccordionTrigger({ children }: AccordionTriggerProps) {
   if (!context) {
     throw new Error("AccordionTrigger must be used within an AccordionItem");
   }
-  const accordionColor=useColor('foreground')
+  const accordionColor = useColor("foreground");
   return (
     <TouchableOpacity
       style={{
@@ -127,6 +127,7 @@ export function AccordionTrigger({ children }: AccordionTriggerProps) {
         alignItems: "center",
         justifyContent: "space-between",
         paddingVertical: 6,
+        paddingRight:25
       }}
       onPress={context.toggle}
       activeOpacity={0.8}

@@ -1,7 +1,13 @@
-import { View, ScrollView } from "react-native";
+import {
+  View,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+} from "react-native";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,11 +29,14 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getListOfItems, getListOfPartners } from "@/service/transaction";
 import CreatePartnerForm from "@/components/CreatePartnerForm";
+import CreateItemForm from "@/components/CreateItemForm";
 import { useRouter } from "expo-router";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createOrder } from "@/service/orders";
+import { useBusiness } from "@/context/businessContext";
+import SnackBarToast from "@/components/SnackBarToast";
 
 const formSchema = z.object({
   partner: z
@@ -46,8 +55,8 @@ type FormData = z.infer<typeof formSchema>;
 
 const CreateOrder = () => {
   const router = useRouter();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
+  const BUSINESS = useBusiness();
 
   const {
     control,
@@ -73,26 +82,26 @@ const CreateOrder = () => {
   const [isPartnerBottomSheetVisible, setPartnerBottomSheetVisible] =
     useState(false);
   const [isItemBottomSheetVisible, setItemBottomSheetVisible] = useState(false);
-  const [partnerComboboxKey, setPartnerComboboxKey] = useState(0);
-  const [itemComboboxKey, setItemComboboxKey] = useState(0);
 
   // Fetch partners and items data
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["partnersAndItemsData"],
+    queryKey: ["createPurchaseOrSale", BUSINESS?.businessId],
     queryFn: async () => {
-      const partners = await getListOfPartners(1);
-      const items = await getListOfItems(1); // Make sure you have this function
-      return { partners, items };
+      const [items, partners] = await Promise.all([
+        getListOfItems(BUSINESS?.businessId),
+        getListOfPartners(BUSINESS?.businessId),
+      ]);
+      return { items, partners };
     },
   });
 
   const handleOpenPartnerBottomSheet = () => {
-    setPartnerComboboxKey((prev) => prev + 1);
+    Keyboard.dismiss();
     setPartnerBottomSheetVisible(true);
   };
 
   const handleOpenItemBottomSheet = () => {
-    setItemComboboxKey((prev) => prev + 1);
+    Keyboard.dismiss();
     setItemBottomSheetVisible(true);
   };
 
@@ -106,9 +115,13 @@ const CreateOrder = () => {
         formData.description,
         formData.number_of_items
       );
-      toast({
-        title: "Order created successfully",
-        variant: "success",
+      // toast({
+      //   title: "Order created successfully",
+      //   variant: "success",
+      // });
+      SnackBarToast({
+        message: "Order created successfully",
+        isSuccess: true,
       });
       queryClient.invalidateQueries({
         queryKey: ["orders"],
@@ -122,14 +135,22 @@ const CreateOrder = () => {
       router.back();
     } catch (e: unknown) {
       if (e instanceof Error) {
-        toast({
-          title: e.message,
-          variant: "error",
+        // toast({
+        //   title: e.message,
+        //   variant: "error",
+        // });
+        SnackBarToast({
+          message: e.message,
+          isSuccess: false,
         });
       } else {
-        toast({
-          title: "Failed to create order",
-          variant: "error",
+        // toast({
+        //   title: "Failed to create order",
+        //   variant: "error",
+        // });
+        SnackBarToast({
+          message: "Failed to create order",
+          isSuccess: false,
         });
       }
     }
@@ -181,8 +202,11 @@ const CreateOrder = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
-      <View style={{ flex: 1 }}>
-        {/* Header */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      >
         <View
           style={{
             flexDirection: "row",
@@ -204,8 +228,10 @@ const CreateOrder = () => {
         </View>
 
         <ScrollView
-          style={{ padding: 15 }}
+          style={{ paddingHorizontal: 15 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <Separator style={{ marginVertical: 15 }} />
           <View style={{ flexDirection: "column", gap: 15 }}>
@@ -214,7 +240,7 @@ const CreateOrder = () => {
               name="description"
               render={({ field }) => (
                 <Input
-                  label="Description (Optional)"
+                  label="Description"
                   placeholder="Order description"
                   value={field.value}
                   onChangeText={field.onChange}
@@ -229,101 +255,111 @@ const CreateOrder = () => {
               </Text>
             )} */}
 
-            <Controller
-              control={control}
-              name="partner"
-              render={({ field }) => (
-                <Combobox
-                  key={partnerComboboxKey}
-                  value={selectedPartner}
-                  onValueChange={(option) => {
-                    setSelectedPartner(option);
-                    field.onChange(Number(option?.value));
-                  }}
-                >
-                  <ComboboxTrigger error={errors.partner?.message}>
-                    <ComboboxValue placeholder="Select partner (Optional)..." />
-                  </ComboboxTrigger>
-                  <ComboboxContent>
-                    <ComboboxInput placeholder="Search partners..." />
-                    <ComboboxList>
-                      <ComboboxEmpty>
-                        <Button onPress={handleOpenPartnerBottomSheet}>
-                          No partner found. Create new
-                        </Button>
-                      </ComboboxEmpty>
-                      {data?.partners.map((partner) => (
-                        <ComboboxItem
-                          key={partner.id}
-                          value={partner.id.toString()}
-                        >
-                          {partner.first_name + " " + partner.last_name}
-                        </ComboboxItem>
-                      ))}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-              )}
-            />
-            {errors.partner && (
-              <Text
-                variant="caption"
-                style={{
-                  color: red,
-                  fontSize: 15,
-                  marginLeft: 15,
-                  marginTop: -15,
-                }}
+            <View
+              style={{ flexDirection: "row", gap: 8, alignItems: "flex-start" }}
+            >
+              <View style={{ flex: 1 }}>
+                <Controller
+                  control={control}
+                  name="partner"
+                  render={({ field }) => (
+                    <Combobox
+                      key={2}
+                      value={selectedPartner}
+                      onValueChange={(option) => {
+                        setSelectedPartner(option);
+                        field.onChange(Number(option?.value));
+                      }}
+                    >
+                      <ComboboxTrigger error={errors.partner?.message}>
+                        <ComboboxValue placeholder="Select partner" />
+                      </ComboboxTrigger>
+                      <ComboboxContent>
+                        <ComboboxInput
+                          style={{ height: 70 }}
+                          placeholder="Search partners..."
+                          error={errors.partner?.message}
+                        />
+                        <ComboboxList>
+                          <ComboboxEmpty>
+                            <Text variant="caption">Nothing was found!</Text>
+                          </ComboboxEmpty>
+                          {data?.partners.map((partner) => (
+                            <ComboboxItem
+                              key={partner.id}
+                              value={partner.id.toString()}
+                            >
+                              {partner.first_name + " " + partner.last_name}
+                            </ComboboxItem>
+                          ))}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                  )}
+                />
+              </View>
+              <Button
+                onPress={handleOpenPartnerBottomSheet}
+                style={{ minWidth: 50, paddingHorizontal: 12 }}
               >
-                {errors.partner.message}
-              </Text>
-            )}
-            <Controller
-              control={control}
-              name="item"
-              render={({ field }) => (
-                <Combobox
-                  key={itemComboboxKey}
-                  value={selectedItem}
-                  onValueChange={(option) => {
-                    setSelectedItem(option);
-                    field.onChange(Number(option?.value));
-                  }}
-                >
-                  <ComboboxTrigger error={errors.item?.message}>
-                    <ComboboxValue placeholder="Select item..." />
-                  </ComboboxTrigger>
-                  <ComboboxContent>
-                    <ComboboxInput placeholder="Search items..." />
-                    <ComboboxList>
-                      <ComboboxEmpty>
-                        <Button onPress={handleOpenItemBottomSheet}>
-                          No item found. Create new
-                        </Button>
-                      </ComboboxEmpty>
-                      {data?.items.map((item) => (
-                        <ComboboxItem key={item.id} value={item.id.toString()}>
-                          {item.item_name}
-                        </ComboboxItem>
-                      ))}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-              )}
-            />
-            {errors.item && (
-              <Text
-                variant="caption"
-                style={{
-                  color: red,
-                  fontSize: 15,
-                  marginLeft: 15,
-                  marginTop: -15,
-                }}
+                +
+              </Button>
+            </View>
+            <View
+              style={{ flexDirection: "row", gap: 8, alignItems: "flex-start" }}
+            >
+              <View style={{ flex: 1 }}>
+                <Controller
+                  control={control}
+                  name="item"
+                  render={({ field }) => (
+                    <Combobox
+                      key={1}
+                      value={selectedItem}
+                      onValueChange={(option) => {
+                        field.onChange(Number(option?.value));
+                        setSelectedItem(option);
+                      }}
+                    >
+                      <ComboboxTrigger error={errors.item?.message}>
+                        <ComboboxValue placeholder="Select item..." />
+                      </ComboboxTrigger>
+                      <ComboboxContent>
+                        <ComboboxInput
+                          style={{ height: 70 }}
+                          placeholder="Search Items..."
+                          error={errors.item?.message}
+                        />
+                        <ComboboxList>
+                          <ComboboxEmpty>
+                            <Text
+                              style={{ textAlign: "center", padding: 10 }}
+                              variant="caption"
+                            >
+                              Nothing was found!
+                            </Text>
+                          </ComboboxEmpty>
+                          {data?.items.map((item) => (
+                            <ComboboxItem
+                              key={item.id}
+                              value={item.id.toString()}
+                            >
+                              {item.item_name}
+                            </ComboboxItem>
+                          ))}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                  )}
+                />
+              </View>
+              <Button
+                onPress={handleOpenItemBottomSheet}
+                style={{ minWidth: 50, paddingHorizontal: 12 }}
               >
-                {errors.item.message}
-              </Text>
-            )}
+                +
+              </Button>
+            </View>
             <Controller
               control={control}
               name="number_of_items"
@@ -341,42 +377,36 @@ const CreateOrder = () => {
                 />
               )}
             />
-            {/* {errors.number_of_items && (
-              <Text variant="caption" style={{ color: red }}>
-                {errors.number_of_items.message}
-              </Text>
-            )} */}
 
-            {/* Partner BottomSheet */}
+            <BottomSheet
+              isVisible={isItemBottomSheetVisible}
+              onClose={() => setItemBottomSheetVisible(false)}
+              snapPoints={[0.9, 0.9]}
+              enableBackdropDismiss={true}
+            >
+              <KeyboardAvoidingView style={{ gap: 20 }}>
+                <CreateItemForm
+                  isEditMode={false}
+                  handleGoBack={() => setItemBottomSheetVisible(false)}
+                  itemId={"new"}
+                  bgColor={secondaryBg}
+                />
+              </KeyboardAvoidingView>
+            </BottomSheet>
+
             <BottomSheet
               isVisible={isPartnerBottomSheetVisible}
               onClose={() => setPartnerBottomSheetVisible(false)}
               title=""
-              snapPoints={[0.8, 0.8]}
-              enableBackdropDismiss={false}
+              snapPoints={[0.5, 0.9]}
+              enableBackdropDismiss={true}
             >
-              <View style={{ gap: 20 }}>
+              <KeyboardAvoidingView style={{ gap: 20 }}>
                 <CreatePartnerForm
                   handleGoBack={() => setPartnerBottomSheetVisible(false)}
                   bgColor={secondaryBg}
                 />
-              </View>
-            </BottomSheet>
-
-            {/* Item BottomSheet */}
-            <BottomSheet
-              isVisible={isItemBottomSheetVisible}
-              onClose={() => setItemBottomSheetVisible(false)}
-              title=""
-              snapPoints={[0.8, 0.8]}
-              enableBackdropDismiss={false}
-            >
-              <View style={{ gap: 20 }}>
-                {/* You can add your CreateItemForm here if you have one */}
-                <Text style={{ color: textColor }}>
-                  Create new item form goes here.
-                </Text>
-              </View>
+              </KeyboardAvoidingView>
             </BottomSheet>
 
             <Separator style={{ marginVertical: 15 }} />
@@ -386,7 +416,7 @@ const CreateOrder = () => {
             </Button>
           </View>
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

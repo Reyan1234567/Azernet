@@ -20,18 +20,14 @@ export default function FeatureLayout() {
             name="partners"
             options={{
               headerTitle: "",
-              headerStyle: {
-                backgroundColor: "transparent",
-              },
+              headerTransparent: true,
             }}
           />
           <Stack.Screen
             name="items"
             options={{
               headerTitle: "",
-              headerStyle: {
-                backgroundColor: "transparent",
-              },
+              headerTransparent: true,
             }}
           />
           <Stack.Screen name="editPartner/[id]" options={{ headerTitle: "" }} />
@@ -54,16 +50,13 @@ export default function FeatureLayout() {
             name="calculator"
             options={{
               headerTitle: "",
-              headerStyle: { backgroundColor: "transparent" },
             }}
           />
           <Stack.Screen
             name="profile"
             options={{
               headerTitle: "",
-              headerStyle: {
-                backgroundColor: "transparent",
-              },
+              headerTransparent: true,
             }}
           />
           <StatusBar style="auto" />

@@ -166,7 +166,6 @@ npm run lint
 
 ## License
 
-Specify your license of choice (MIT, Apache-2.0, etc.) or keep the repository private until you are ready to publish.
 
 ---
 

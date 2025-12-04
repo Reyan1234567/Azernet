@@ -6,7 +6,6 @@ import { getAllPurchaseTransactions } from "@/service/transaction";
 import { SearchBar } from "./ui/searchbar";
 import { Button } from "./ui/button";
 import PurchaseCard from "./PurchaseCard";
-import { Plus } from "lucide-react-native";
 import { useColor } from "@/hooks/useColor";
 import { router } from "expo-router";
 import { Spinner, LoadingOverlay } from "./ui/spinner";
@@ -23,7 +22,6 @@ const PurchaseTransaction = () => {
   const { toast } = useToast();
   const length = useBottomTabBarHeight() || 0;
   const queryClient = useQueryClient();
-  const primaryColor = useColor("primary");
   const red = useColor("red");
   const [search, setSearch] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -69,12 +67,12 @@ const PurchaseTransaction = () => {
         setLoading(false);
       }
     },
-    [dialog, queryClient, toast]
+    [dialog, length, queryClient]
   );
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await queryClient.refetchQueries({ queryKey: ["purchases"] });
+    await queryClient.refetchQueries({ queryKey: ["purchaseTransactions"] });
     setIsRefreshing(false);
   }, [queryClient]);
 

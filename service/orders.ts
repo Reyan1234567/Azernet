@@ -149,8 +149,8 @@ export const changeStatus = async (
     }
   }
   if (status === "delivered") {
-    if (!unpaidAmount || !pricePerAmount) {
-      throw new Error("pricePerItem or unpaidAmount weren't provided!");
+    if (!pricePerAmount) {
+      throw new Error("pricePerItem wasn't provided!");
     }
     let { error } = await supabase.rpc("markasdelivered", {
       business_id: business.data.business_id,

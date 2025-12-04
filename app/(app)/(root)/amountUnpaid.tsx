@@ -4,21 +4,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { useColor } from "@/hooks/useColor";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Separator } from "@/components/ui/separator";
 import { subtractUnpaidAmountPurchase } from "@/service/purchase";
-import { useToast } from "@/components/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import SnackBarToast from "@/components/SnackBarToast";
 
 const AmountUnpaid = () => {
   const { id, debt } = useLocalSearchParams();
-  const amount = parseFloat(Array.isArray(debt) ? debt[0] : debt); // this gonna show up small and at the top amount ETB
+  const amount = parseFloat(Array.isArray(debt) ? debt[0] : debt);
   const [amountLeft, setAmountLeft] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const textColor = useColor("text");
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const handleSubmit = async (id: number, debt: number) => {
     try {
@@ -27,20 +25,16 @@ const AmountUnpaid = () => {
       SnackBarToast({
         message: "Amount Subtracted Successfully!",
         isSuccess: true,
-        marginBottom: length,
       });
       queryClient.invalidateQueries({
-        queryKey: ["orders"],
+        queryKey: ["orders", "purchaseTransactions", "sales"],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["purchases"],
-      });
+      router.back();
     } catch (e) {
       console.error(e);
       SnackBarToast({
         message: "Failed to Subtract amount",
-        isSuccess: true,
-        marginBottom: length,
+        isSuccess: false,
       });
     } finally {
       setLoading(false);

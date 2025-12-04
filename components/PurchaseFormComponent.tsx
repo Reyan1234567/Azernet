@@ -5,7 +5,6 @@ import * as z from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getListOfPartners } from "@/service/transaction";
 import SnackBarToast from "./SnackBarToast";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Button } from "./ui/button";
 import { Text } from "./ui/text";
 import { Input } from "./ui/input";
@@ -26,6 +25,7 @@ import { router } from "expo-router";
 import { useColor } from "@/hooks/useColor";
 import { Spinner } from "./ui/spinner";
 import { useState } from "react";
+import { useBusiness } from "@/context/businessContext";
 
 interface PurchaseFormComponentProps {
   id: number;
@@ -63,9 +63,9 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
 
   type PurchaseFormData = z.infer<typeof purchaseFormSchema>;
 
-  const length = useBottomTabBarHeight();
+  const length = 10;
   const textColor = useColor("text");
-
+  const BUSINESS=useBusiness()
   const queryClient = useQueryClient();
   const {
     control,
@@ -84,7 +84,6 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
     null
   );
 
-  // Fetch suppliers
   const {
     data: suppliersData,
     isLoading: suppliersLoading,
@@ -92,7 +91,7 @@ const PurchaseFormComponent: React.FC<PurchaseFormComponentProps> = ({
   } = useQuery({
     queryKey: ["suppliers-purchase"],
     queryFn: async () => {
-      const suppliers = await getListOfPartners(1);
+      const suppliers = await getListOfPartners(BUSINESS.businessId);
       return suppliers;
     },
   });

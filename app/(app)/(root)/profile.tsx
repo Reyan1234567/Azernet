@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import * as ImagePicker from "expo-image-picker";
-import { decode } from 'base64-arraybuffer'; 
+import { decode } from "base64-arraybuffer";
 
 import SnackBarToast from "@/components/SnackBarToast";
 import { ImageIcon } from "lucide-react-native";
@@ -86,8 +86,8 @@ const Profile = () => {
     try {
       let finalProfilePicPath = profile?.profilePic;
       if (data.newImageFile) {
-        console.log("NEW IMAGE")
-        console.log(data.newImageFile.uri)
+        console.log("NEW IMAGE");
+        console.log(data.newImageFile.uri);
         const uploadRes = await uploadProfile(
           decode(data.newImageFile.base64),
           session.user.id,
@@ -149,7 +149,14 @@ const Profile = () => {
         width: "100%",
       }}
     >
-      <View style={{ alignItems: "center", gap: 12, marginBottom: 10 }}>
+      <View
+        style={{
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 10,
+          paddingTop: 70,
+        }}
+      >
         <Image
           source={{ uri: previewImage }}
           variant="circle"

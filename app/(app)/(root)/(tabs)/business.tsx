@@ -17,70 +17,6 @@ const Business = () => {
   const mutedColor = useColor("textMuted");
   const primaryColor = useColor("primary");
 
-  // Sample items data
-  const items = [
-    {
-      id: "1",
-      name: "Samsung Galaxy A36",
-      measure: "Item",
-      purchasePrice: 15000,
-      sellingPrice: 18000,
-    },
-    {
-      id: "2",
-      name: "iPhone 15",
-      measure: "Item",
-      purchasePrice: 45000,
-      sellingPrice: 52000,
-    },
-    {
-      id: "3",
-      name: "Dell Laptop",
-      measure: "Item",
-      purchasePrice: 35000,
-      sellingPrice: 42000,
-    },
-    {
-      id: "4",
-      name: "Coffee Beans",
-      measure: "KG",
-      purchasePrice: 250,
-      sellingPrice: 350,
-    },
-  ];
-
-  // Sample partners data
-  const partners = [
-    {
-      id: "1",
-      firstName: "John",
-      lastName: "Doe",
-      phone: "+251 911 234 567",
-      role: "Supplier",
-    },
-    {
-      id: "2",
-      firstName: "Jane",
-      lastName: "Smith",
-      phone: "+251 911 345 678",
-      role: "Customer",
-    },
-    {
-      id: "3",
-      firstName: "Ahmed",
-      lastName: "Ali",
-      phone: "+251 911 456 789",
-      role: "Supplier",
-    },
-    {
-      id: "4",
-      firstName: "Sara",
-      lastName: "Mohammed",
-      phone: "+251 911 567 890",
-      role: "Customer",
-    },
-  ];
-
   const handleNavigateToPartners = () => {
     router.navigate("/partners");
   };
@@ -105,7 +41,10 @@ const Business = () => {
         </Text>
         <Separator style={{ width: "90%", marginHorizontal: 20 }} />
         <View style={{ gap: 16, padding: 20 }}>
-          <TouchableOpacity onPress={handleNavigateToPartners}>
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={handleNavigateToPartners}
+          >
             <Card style={{ padding: 20 }}>
               <View
                 style={{
@@ -146,23 +85,20 @@ const Business = () => {
                     <Text variant="body" style={{ color: mutedColor }}>
                       Manage your suppliers and customers
                     </Text>
-                    <Text
-                      variant="caption"
-                      style={{ color: mutedColor, marginTop: 4 }}
-                    >
-                      {partners.length} partners registered
-                    </Text>
                   </View>
                 </View>
 
                 <Text variant="caption" style={{ color: mutedColor }}>
-                  <ChevronRight />
+                  <ChevronRight color={textColor} />
                 </Text>
               </View>
             </Card>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleNavigateToItems}>
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={handleNavigateToItems}
+          >
             <Card style={{ padding: 20 }}>
               <View
                 style={{
@@ -203,17 +139,11 @@ const Business = () => {
                     <Text variant="body" style={{ color: mutedColor }}>
                       Manage your products and inventory
                     </Text>
-                    <Text
-                      variant="caption"
-                      style={{ color: mutedColor, marginTop: 4 }}
-                    >
-                      {items.length} items in catalog
-                    </Text>
                   </View>
                 </View>
 
                 <Text variant="caption" style={{ color: mutedColor }}>
-                  <ChevronRight />
+                  <ChevronRight color={textColor} />
                 </Text>
               </View>
             </Card>

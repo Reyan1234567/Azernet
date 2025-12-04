@@ -86,8 +86,8 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
             <BusinessView
               key={0}
               name={"My account"}
-              onClick={()=>router.navigate("/(app)/(root)/profile")}
-              icon={<User color={textColor}/>}
+              onClick={() => router.navigate("/(app)/(root)/profile")}
+              icon={<User color={textColor} />}
               selected={false}
             />
             <Accordion type="single" collapsible>

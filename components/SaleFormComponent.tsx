@@ -3,7 +3,6 @@ import { View } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useToast } from "./ui/toast";
 import SnackBarToast from "./SnackBarToast";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Button } from "./ui/button";
@@ -12,7 +11,6 @@ import { Input } from "./ui/input";
 import { changeStatus, getNumberOfItems } from "@/service/orders";
 import { bigNumber, ORDERSTATUS } from "@/constants";
 import { useColor } from "@/hooks/useColor";
-import { Separator } from "./ui/separator";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 
@@ -47,7 +45,7 @@ const SaleFormComponent: React.FC<SaleFormComponentProps> = ({ id }) => {
   type SaleFormData = z.infer<typeof saleFormSchema>;
 
   const queryClient = useQueryClient();
-  const length = useBottomTabBarHeight();
+  const length = 10
   const [quantity, setQuantity] = useState(0);
   const [pricePerItem, setPricePerItem] = useState(0);
   const destructive = useColor("destructive");

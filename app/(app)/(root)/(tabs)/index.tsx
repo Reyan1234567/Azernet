@@ -28,7 +28,9 @@ const Index = () => {
   const cardBg = useColor("card");
   const textColor = useColor("text");
   const mutedColor = useColor("textMuted");
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    new Date(Date.now() - ToMilliSeconds(7))
+  );
   const BUSINESS = useContext(BusinessContext);
   const { data, isLoading, isError, error, isSuccess } = useQuery({
     queryKey: ["dashboard", selectedDate, BUSINESS?.businessId],
@@ -51,9 +53,9 @@ const Index = () => {
     { label: "6 months", value: "180" },
     { label: "1 year", value: "365" },
   ];
-  const header =
-    BUSINESS?.businesses?.filter((b) => b.id === BUSINESS.businessId)[0]
-      .business_name ?? "Dashboard";
+  // const header =
+  //   BUSINESS?.businesses?.filter((b) => b.id === BUSINESS.businessId)[0]
+  //     .business_name ?? "Dashboard";
   return (
     <View style={{ flex: 1, backgroundColor: bgColor }}>
       <TopBar />
@@ -62,9 +64,9 @@ const Index = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text variant="heading" style={{ color: textColor, fontSize: 38 }}>
+          {/* <Text variant="heading" style={{ color: textColor, fontSize: 38 }}>
             {header}
-          </Text>
+          </Text> */}
           <Text variant="body" style={{ color: mutedColor, marginTop: 4 }}>
             Welcome back! Here&apos;s your business overview
           </Text>

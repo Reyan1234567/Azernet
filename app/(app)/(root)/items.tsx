@@ -14,12 +14,12 @@ import { Text } from "@/components/ui/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { deleteItem, getAllItems } from "@/service/item";
 import { Spinner, LoadingOverlay } from "@/components/ui/spinner";
-import { useToast } from "@/components/ui/toast";
+import SnackBarToast from "@/components/SnackBarToast";
 import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
 import { BusinessContext } from "@/context/businessContext";
+import AddButton from "@/components/addButton";
 
 const Items = () => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -69,35 +69,33 @@ const Items = () => {
     try {
       await deleteItem(modalId);
       queryClient.invalidateQueries({ queryKey: ["items"] });
-      toast({
-        title: "Deletion successful",
-        variant: "success",
+      SnackBarToast({
+        message: "Item deleted successfully",
+        isSuccess: true,
       });
       dialog.close();
     } catch (error) {
       if (error instanceof Error) {
-        toast({
-          title: "Error deleting item",
-          description: error.message,
-          variant: "error",
+        SnackBarToast({
+          message: error.message,
+          isSuccess: false,
         });
       } else {
-        toast({
-          title: "Error deleting item",
-          description: "Something went wrong",
-          variant: "error",
+        SnackBarToast({
+          message: "Something went wrong while deleting the item",
+          isSuccess: false,
         });
       }
     } finally {
       setLoading(false);
     }
-  }, [dialog, modalId, queryClient, toast]);
+  }, [dialog, modalId, queryClient]);
 
   // Centralized header component
   const renderHeader = useMemo(
     () => (
       <View>
-        <View style={{ padding: 16, paddingBottom: 8, paddingTop: 5 }}>
+        <View style={{ padding: 16, paddingBottom: 8, paddingTop: 30 }}>
           <Text
             variant="title"
             style={{
@@ -208,7 +206,7 @@ const Items = () => {
         <FlatList
           data={data}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
           renderItem={({ item }) => (
             <ItemCard
               item={{
@@ -251,18 +249,7 @@ const Items = () => {
             zIndex: 1000,
           }}
         >
-          <Button
-            variant="default"
-            size="lg"
-            icon={Plus}
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: primaryColor,
-            }}
-            onPress={() => router.push("/editItem/new")}
-          />
+          <AddButton onPress={() => router.push("/editItem/new")} />
         </View>
       </View>
       <AlertDialog

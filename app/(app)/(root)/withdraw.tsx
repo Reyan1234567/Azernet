@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useColor } from "@/hooks/useColor";
 import { createWithdraw } from "@/service/business_cash";
-import { useToast } from "@/components/ui/toast";
+import SnackBarToast from "@/components/SnackBarToast";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { BusinessContext } from "@/context/businessContext";
@@ -38,30 +38,34 @@ const Withdraw = () => {
 
   const textColor = useColor("text");
   const queryClient = useQueryClient();
-  const red = useColor("red");
-  const { toast } = useToast();
   const BUSINESS = useContext(BusinessContext);
 
   const onSubmit = async (data: formType) => {
     try {
-      await createWithdraw(BUSINESS?.businessId, data.amount, data.description);
-      toast({
-        title: "Withdrawal Successful",
-        description: "Your withdrawal has been successfully recorded.",
-        variant: "success",
+      if (!BUSINESS?.businessId) {
+        throw new Error("No business selected");
+      }
+      await createWithdraw(BUSINESS.businessId, data.amount, data.description);
+      SnackBarToast({
+        message: "Withdrawal recorded successfully",
+        isSuccess: true,
       });
       queryClient.invalidateQueries({
         queryKey: ["sumMoney"],
       });
       router.back();
-    } catch (e: any) {
-      toast({
-        title: "Withdrawal Failed",
-        description:
-          e?.message ??
-          "Something went wrong while processing your withdrawal.",
-        variant: "error",
-      });
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        SnackBarToast({
+          message: e.message,
+          isSuccess: false,
+        });
+      } else {
+        SnackBarToast({
+          message: "Something went wrong while processing your withdrawal.",
+          isSuccess: false,
+        });
+      }
     }
   };
 

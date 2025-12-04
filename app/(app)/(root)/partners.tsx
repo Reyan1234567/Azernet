@@ -14,13 +14,13 @@ import { Text } from "@/components/ui/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { deletePartner, getPartners } from "@/service/partners";
 import { Spinner, LoadingOverlay } from "@/components/ui/spinner";
-import { useToast } from "@/components/ui/toast";
+import SnackBarToast from "@/components/SnackBarToast";
 import { AlertDialog, useAlertDialog } from "@/components/ui/alert-dialog";
 import { useContext } from "react";
 import { BusinessContext } from "@/context/businessContext";
+import AddButton from "@/components/addButton";
 
 const Partners = () => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -70,29 +70,27 @@ const Partners = () => {
     try {
       await deletePartner(modalId);
       queryClient.invalidateQueries({ queryKey: ["partners"] });
-      toast({
-        title: "Deletion successful",
-        variant: "success",
+      SnackBarToast({
+        message: "Partner deleted successfully",
+        isSuccess: true,
       });
       dialog.close();
     } catch (error) {
       if (error instanceof Error) {
-        toast({
-          title: "Error deleting partner",
-          description: error.message,
-          variant: "error",
+        SnackBarToast({
+          message: error.message,
+          isSuccess: false,
         });
       } else {
-        toast({
-          title: "Error deleting partner",
-          description: "Something went wrong!",
-          variant: "error",
+        SnackBarToast({
+          message: "Something went wrong while deleting the partner",
+          isSuccess: false,
         });
       }
     } finally {
       setLoading(false);
     }
-  }, [dialog, modalId, queryClient, toast]);
+  }, [dialog, modalId, queryClient]);
 
   const renderHeader = useMemo(
     () => (
@@ -208,7 +206,7 @@ const Partners = () => {
           <FlatList
             data={data}
             keyExtractor={(partner) => partner.id}
-            contentContainerStyle={{ padding: 16 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
             renderItem={({ item }) => (
               <PartnerCard
                 partner={item}
@@ -234,7 +232,9 @@ const Partners = () => {
   ]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: bgColor, paddingTop:30}}
+    >
       <View style={{ flex: 1, backgroundColor: bgColor, paddingTop: 24 }}>
         {renderHeader}
         {renderContent()}
@@ -246,18 +246,7 @@ const Partners = () => {
             zIndex: 1000,
           }}
         >
-          <Button
-            variant="default"
-            size="lg"
-            icon={Plus}
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: primaryColor,
-            }}
-            onPress={() => router.push("/editPartner/new")}
-          />
+          <AddButton onPress={() => router.push("/editPartner/new")} />
         </View>
       </View>
       <AlertDialog

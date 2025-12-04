@@ -14,6 +14,7 @@ import { createItem, editItem, getAsingleItem } from "@/service/item";
 import { useToast } from "./ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BusinessContext } from "@/context/businessContext";
+import SnackBarToast from "./SnackBarToast";
 
 const formSchema = z.object({
   itemName: z.string().min(1, "Item name is required"),
@@ -57,7 +58,6 @@ const CreateItemForm = ({
 
   const textColor = useColor("text");
   const red = useColor("red");
-  const { toast } = useToast();
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["item", itemId],
@@ -89,12 +89,16 @@ const CreateItemForm = ({
           item_name: data.itemName,
           measure: data.measure,
           description: data.description || "",
-          business_id: BUSINESS?.businessId
+          business_id: BUSINESS?.businessId,
         });
-        toast({
-          title: "Success!",
-          description: "Item info has been updated.",
-          variant: "success",
+        // toast({
+        //   title: "Success!",
+        //   description: "Item info has been updated.",
+        //   variant: "success",
+        // });
+        SnackBarToast({
+          message: "Item info has been updated!",
+          isSuccess: true,
         });
         queryClient.invalidateQueries({ queryKey: ["items"] });
         console.log("Code reach test for edit");
@@ -115,18 +119,34 @@ const CreateItemForm = ({
           queryKey: ["createPurchaseOrSale"],
         });
         handleGoBack();
-        toast({
-          title: "Success!",
-          description: "Item created successfully",
-          variant: "success",
+        // toast({
+        //   title: "Success!",
+        //   description: "Item created successfully",
+        //   variant: "success",
+        // });
+        SnackBarToast({
+          message: "Item created successfully!",
+          isSuccess: true,
         });
       }
     } catch (error) {
-      toast({
-        title: "Error!",
-        description: "Couldn't save item, something went wrong",
-        variant: "error",
-      });
+      // toast({
+      //   title: "Error!",
+      //   description: "Couldn't save item, something went wrong",
+      //   variant: "error",
+      // });
+      if (error instanceof Error) {
+        SnackBarToast({
+          message: error.message,
+          isSuccess: false,
+        });
+      } else {
+        SnackBarToast({
+          message: "Couldn't save item, something went wrong!",
+          isSuccess: false,
+        });
+      }
+
       console.error("Error saving item:", error);
     }
   };

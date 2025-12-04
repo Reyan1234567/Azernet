@@ -14,10 +14,10 @@ import {
   editPartner,
   getSinglePartner,
 } from "@/service/partners";
-import { useToast } from "./ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Spinner } from "./ui/spinner"; // Import the spinner
 import { BusinessContext } from "@/context/businessContext";
+import SnackBarToast from "./SnackBarToast";
 
 interface PartnerCreation {
   handleGoBack: () => void;
@@ -79,7 +79,6 @@ const CreatePartnerForm = ({ handleGoBack, id, bgColor }: PartnerCreation) => {
 
   const textColor = useColor("text");
   const BUSINESS=useContext(BusinessContext)
-  const { toast } = useToast();
 
   const onSubmit = async (data: FormSchemaValues) => {
     try {
@@ -101,10 +100,14 @@ const CreatePartnerForm = ({ handleGoBack, id, bgColor }: PartnerCreation) => {
           queryKey: ["createPurchaseOrSale"],
         });
 
-        toast({
-          title: "Success!",
-          description: "Partner edited successfully",
-          variant: "success",
+        // toast({
+        //   title: "Success!",
+        //   description: "Partner edited successfully",
+        //   variant: "success",
+        // });
+        SnackBarToast({
+          message: "Partner edited successfully!",
+          isSuccess: true,
         });
       } else {
         await createPartner({
@@ -123,19 +126,34 @@ const CreatePartnerForm = ({ handleGoBack, id, bgColor }: PartnerCreation) => {
           queryKey: ["createPurchaseOrSale"],
         });
 
-        toast({
-          title: "Success!",
-          description: "Partner created successfully",
-          variant: "success",
+        // toast({
+        //   title: "Success!",
+        //   description: "Partner created successfully",
+        //   variant: "success",
+        // });
+        SnackBarToast({
+          message: "Partner created successfully!",
+          isSuccess: true,
         });
       }
       handleGoBack();
     } catch (error) {
-      toast({
-        title: "Error!",
-        description: "Couldn't save partner, something went wrong",
-        variant: "error",
-      });
+      // toast({
+      //   title: "Error!",
+      //   description: "Couldn't save partner, something went wrong",
+      //   variant: "error",
+      // });
+      if (error instanceof Error) {
+        SnackBarToast({
+          message: error.message,
+          isSuccess: false,
+        });
+      } else {
+        SnackBarToast({
+          message: "Couldn't save partner, something went wrong!",
+          isSuccess: false,
+        });
+      }
       console.error("Error saving partner:", error);
     }
   };

@@ -131,7 +131,6 @@ const OrderPurchasedCard = ({
         </View>
       </View>
 
-      {/* Next Status Info */}
       <View
         style={{
           backgroundColor: `${successColor}15`,
@@ -150,7 +149,6 @@ const OrderPurchasedCard = ({
         </Text>
       </View>
 
-      {/* Action Buttons */}
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Button
           size="sm"

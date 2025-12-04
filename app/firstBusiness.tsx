@@ -10,7 +10,6 @@ import { useColor } from "@/hooks/useColor";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "../components/ui/text";
 import SnackBarToast from "@/components/SnackBarToast";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 const Business = () => {
   const [businessName, setBusinesName] = useState("");
