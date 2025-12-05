@@ -66,7 +66,6 @@ const CreatePurchaseOrSale = () => {
     });
 
   type FormData = z.infer<typeof formSchema>;
-  const { toast } = useToast();
   const params = useLocalSearchParams();
   const queryClient = useQueryClient();
   const typeParam = params.type?.toString().toLowerCase();
@@ -131,10 +130,6 @@ const CreatePurchaseOrSale = () => {
           pricePerItem: formData.price,
           unpaidAmount: formData.unpaidAmount,
         });
-        // toast({
-        //   title: "Purchase record created successfully",
-        //   variant: "success",
-        // });
         SnackBarToast({
           message: "Purchase record created successfully",
           isSuccess: true,
@@ -148,10 +143,10 @@ const CreatePurchaseOrSale = () => {
           formData.numberOfItems,
           formData.unpaidAmount
         );
-        toast({
-          title: "Sale record created successfully",
-          variant: "success",
-        });
+        SnackBarToast({
+          message:"Sale record created successfully",
+          isSuccess:true
+        })
       }
       queryClient.invalidateQueries({ queryKey: ["salesTransactions"] });
 
@@ -159,19 +154,11 @@ const CreatePurchaseOrSale = () => {
     } catch (e) {
       if (e instanceof Error) {
         console.log(e.message);
-        // toast({
-        //   title: e.message,
-        //   variant: "error",
-        // });
         SnackBarToast({
           message: e.message,
           isSuccess: false,
         });
       } else {
-        // toast({
-        //   title: "An unknown error occurred.",
-        //   variant: "error",
-        // });
         SnackBarToast({
           message: "An unknown error occured!",
           isSuccess: false,

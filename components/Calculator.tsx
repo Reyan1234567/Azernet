@@ -390,12 +390,14 @@ const styles = StyleSheet.create({
   keyWrapper: {
     flex: 1,
     paddingHorizontal: 2,
+    paddingVertical: 2
   },
   doubleKey: {
     flex: 2,
   },
   button: {
     width: '100%',
+    height:80
   },
   buttonText: {
     fontSize: 20,

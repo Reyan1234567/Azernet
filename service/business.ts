@@ -34,9 +34,9 @@ export const businessIdExist = async (business_id_arg: number) => {
 
 export const createBusinesses = async (
   business_name_arg: string,
-  user_id_arg: number
+  user_id_arg: string
 ) => {
-  let { data, error } = await supabase.rpc("create_business_1", {
+  let { data, error } = await supabase.rpc("create_business_8", {
     business_name_arg,
     user_id_arg,
   });

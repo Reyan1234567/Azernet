@@ -10,6 +10,7 @@ import { useColor } from "@/hooks/useColor";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "../../../components/ui/text";
 import SnackBarToast from "@/components/SnackBarToast";
+import { router } from "expo-router";
 
 const Business = () => {
   const [businessName, setBusinesName] = useState("");
@@ -17,33 +18,25 @@ const Business = () => {
   const textColor = useColor("text");
   const AUTH = useAuth();
   const BUSINESS = useBusiness();
-  // const { toast } = useToast();
-  const handleCreateBusinesses = async (name: string, id: number) => {
+  const handleCreateBusinesses = async (name: string, id: string) => {
     try {
       console.log("name: ", name);
       console.log("id: ", id);
       setLoading(true);
       const newId = await createBusinesses(name, id);
-      // toast({
-      //   title: ,
-      //   description: "Your business has been successfully registered",
-      //   duration: 3000,
-      //   variant: "success",
-      // });
       SnackBarToast({
         message: "Business Created!",
         isSuccess: true,
       });
       console.log("About to set context");
-      BUSINESS?.setBusiness(newId.toString());
+      BUSINESS.setBusinesses([
+        ...BUSINESS.businesses,
+        { id: newId, business_name: name },
+      ]);
+      BUSINESS?.setBusiness(newId);
+      router.back();
     } catch (e) {
       if (e instanceof Error) {
-        // toast({
-        //   title: "Failed to Create Business",
-        //   description: e.message,
-        //   duration: 5000,
-        //   variant: "error",
-        // });
         SnackBarToast({
           message: "Failed to Create Business!",
           isSuccess: false,
@@ -51,12 +44,6 @@ const Business = () => {
         console.log(e.message);
         console.log(e.stack);
       } else {
-        // toast({
-        //   title: "Failed to Create Business",
-        //   description: "Something went wrong when creating business",
-        //   duration: 5000,
-        //   variant: "error",
-        // });
         SnackBarToast({
           message: "Failed to Create Business!",
           isSuccess: false,
@@ -95,17 +82,13 @@ const Business = () => {
               return;
             }
             console.log("In the handler function: ", AUTH.session?.user.id);
-            await handleCreateBusinesses(
-              businessName,
-              Number(AUTH.session?.user.id)
-            );
+            await handleCreateBusinesses(businessName, AUTH.session?.user.id);
           }}
           disabled={!businessName}
           loading={loading}
         >
           Submit
         </Button>
-        {/* <Button onPress={() => AUTH?.signOut()}>Signout</Button> */}
       </View>
     </SafeAreaView>
   );

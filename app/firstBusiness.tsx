@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Store } from "lucide-react-native";
 import { createBusinesses } from "@/service/business";
 import { useAuth } from "@/context/authContext";
-import { BusinessContext } from "@/context/businessContext";
+import { BusinessContext, useBusiness } from "@/context/businessContext";
 import { useColor } from "@/hooks/useColor";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "../components/ui/text";
@@ -14,21 +14,26 @@ import SnackBarToast from "@/components/SnackBarToast";
 const Business = () => {
   const [businessName, setBusinesName] = useState("");
   const [loading, setLoading] = useState(false);
-  const length=10
+  const length = 10;
   const textColor = useColor("text");
   const AUTH = useAuth();
-  const BUSINESS = useContext(BusinessContext);
+  const BUSINESS = useBusiness();
   const handleCreateBusinesses = async (name: string, id: number) => {
     try {
+      console.log("name: ", name);
+      console.log("id: ", id);
       setLoading(true);
       const newId = await createBusinesses(name, id);
       SnackBarToast({
         message: "Business Created!",
         isSuccess: true,
-        marginBottom: length,
       });
       console.log("About to set context");
-      BUSINESS?.setBusiness(newId.toString());
+      BUSINESS.setBusinesses([
+        ...BUSINESS.businesses,
+        { id: newId, business_name: name },
+      ]);
+      BUSINESS?.setBusiness(newId);
     } catch (e) {
       if (e instanceof Error) {
         SnackBarToast({

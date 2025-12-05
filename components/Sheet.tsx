@@ -4,7 +4,7 @@ import { View } from "@/components/ui/view";
 
 import { useColor } from "@/hooks/useColor";
 import { Image } from "@/components/ui/image";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
 import {
@@ -39,6 +39,8 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
   const foreground = useColor("foreground");
   const BUSINESS = useBusiness();
   const AUTH = useAuth();
+  const insets = useSafeAreaInsets();
+
   return (
     <Sheet open={open} onOpenChange={setOpen} side="left">
       <SheetContent
@@ -164,7 +166,9 @@ export function SheetLeft({ open, setOpen }: sheetInterface) {
         </View>
         <View>
           <Separator />
-          <View style={styles.footer}>
+          <View
+            style={{ ...styles.footer, paddingBottom: insets.bottom || 20 }}
+          >
             <View style={styles.contactInfo}>
               <Text style={[styles.contactText, { color: mutedColor }]}>
                 @reyanber
@@ -244,7 +248,6 @@ const styles = StyleSheet.create({
   footer: {
     paddingTop: 16,
     paddingHorizontal: 20,
-    paddingBottom: 20,
   },
   footerItem: {
     flexDirection: "row",

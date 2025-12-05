@@ -4,13 +4,16 @@ import { AuthProvider, useAuth } from "@/context/authContext";
 import { BusinessProvider, useBusiness } from "@/context/businessContext";
 import { ThemeProvider } from "@/theme/theme-provider";
 import { Stack } from "expo-router";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function Root() {
   return (
     <AuthProvider>
       <BusinessProvider>
-        <SplashScreenController />
-        <RootNavigator />
+        <SafeAreaProvider>
+          <SplashScreenController />
+          <RootNavigator />
+        </SafeAreaProvider>
       </BusinessProvider>
     </AuthProvider>
   );

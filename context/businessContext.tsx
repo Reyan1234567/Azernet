@@ -7,6 +7,7 @@ type businessContextType = {
   businessId: number | null;
   businesses: getBusinessIdsT[] | null;
   setBusiness: (businessId: number) => void;
+  setBusinesses: (business: any) => void;
   isLoading: boolean;
 };
 
@@ -52,7 +53,7 @@ export const BusinessProvider = ({ children }: any) => {
     func();
   }, [ID]);
 
-  const getBusinesses = async (): Promise<getBusinessIdsT[] | undefined> => {
+  const getBusinesses = async () => {
     console.log("getting Businesses");
     try {
       const businessArr = await getBusinessIds(ID);
@@ -60,7 +61,7 @@ export const BusinessProvider = ({ children }: any) => {
       setBusinesses(businessArr);
       return businessArr;
     } catch (e) {
-      console.log("Couldn't get all businesses", e.message);
+      console.log("Couldn't get all businesses", e);
     }
   };
 
@@ -70,6 +71,7 @@ export const BusinessProvider = ({ children }: any) => {
       businessId,
       businesses,
       isLoading,
+      setBusinesses,
     }),
     [businessId, businesses, isLoading]
   );
