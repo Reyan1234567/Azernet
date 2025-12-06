@@ -18,7 +18,7 @@ import { BusinessContext } from "@/context/businessContext";
 import AddButton from "./addButton";
 
 const SalesTransaction = () => {
-  const length = useBottomTabBarHeight();
+  const length = 10;
   const queryClient = useQueryClient();
   const red = useColor("red");
   const [search, setSearch] = useState("");

@@ -21,7 +21,7 @@ import { BusinessContext } from "@/context/businessContext";
 import AddButton from "./addButton";
 
 const OrdersComponent = () => {
-  const length = useBottomTabBarHeight();
+  const length = 10;
   const dialog = useAlertDialog();
   const reverseToPending = useAlertDialog();
   const reverseToPurchased = useAlertDialog();
