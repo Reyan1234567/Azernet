@@ -1,4 +1,4 @@
-# Zaha – Mobile ERP for Small Businesses
+# Azernet– Mobile ERP for Small Businesses
 
 Zaha (internally "Azernet") is an Expo-powered React Native application that helps small businesses track inventory, partners, orders, sales, purchases, withdrawals, and cash movements from a single mobile dashboard. It ships with opinionated UI components, rich forms, Supabase-backed data, and Expo Router navigation tailored for production deployments.
 
